@@ -1,6 +1,9 @@
+import io
 import os
 import subprocess
+import urllib.request
 
+import colorthief
 import dotenv
 import flask
 import flask_basicauth
@@ -37,26 +40,43 @@ def tick_duration(update):
 
 def generic_genre(genre):
     if flask.request.method == "POST":
+        colors = {"text": "#ca9ee6", "shadow": "#232634"}
         if flask.request.form.get("initial-load") != "true":
             for i in range(5):
                 try:
                     song_name = flask.request.form["song-search"]
                     artist_name = flask.request.form["artist-search"]
-                    youtube = pytubefix.Search(
-                        f"{song_name} by {artist_name}").results[0]
+                    song_search = pytubefix.Search(
+                        f"""
+                        {song_name} by {artist_name} "Provided to YouTube"
+                        """)
+                    if not song_search.results:
+                        song_search = pytubefix.Search(
+                        f"{song_name} by {artist_name}")
+                    song = song_search.results[0]
+                    colors_list = [f"#{rgb[0]:02x}{rgb[1]:02x}{rgb[2]:02x}"
+                              for rgb in colorthief.ColorThief(io.BytesIO(
+                            urllib.request.urlopen(song.thumbnail_url).read()))
+                              .get_palette(color_count=2, quality=1)[:2]]
+                    colors = {"text": colors_list[0], "shadow": colors_list[1]}
 
                     # noinspection PyTypeChecker
                     url = (yt_dlp.YoutubeDL({
                         "format": "bestaudio/best",
                         "quiet": True}
-                    ).extract_info(youtube.watch_url, download=False)
+                    ).extract_info(song.watch_url, download=False)
                            .get("url"))
-                    length = float(json.loads(subprocess.run(
-                        f"ffprobe -v error -show_entries format=duration -of "
-                        f"json {url}",
-                        stdout=subprocess.PIPE,
-                        stderr=subprocess.PIPE,
-                        text=True).stdout)["format"]["duration"])
+                    while True:
+                        try:
+                            length = float(json.loads(subprocess.run(
+                                f"ffprobe -v error -show_entries format=duration -of "
+                                f"json {url}",
+                                stdout=subprocess.PIPE,
+                                stderr=subprocess.PIPE,
+                                text=True).stdout)["format"]["duration"])
+                            break
+                        except KeyError:
+                            pass
                     queues[genre].append({
                         "song_name": song_name,
                         "artist_name": artist_name,

@@ -53,8 +53,8 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 });
 
-form.addEventListener("submit", async (e) => {
-  e.preventDefault();
+form.addEventListener("submit", async (event) => {
+  event.preventDefault();
   await fetch(`/${genre}`, {
    method: "POST",
    body: new FormData(form)

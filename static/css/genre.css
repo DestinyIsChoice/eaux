@@ -94,6 +94,7 @@ input[name="song-search"], input[name="artist-search"] {
     font-size: 1rem;
     padding: 14px 16px;
     text-shadow: -2px 2px 0 #232634;
+    text-transform: lowercase;
     transition: background-color 0.2s, border-color 0.2s;
     width: 100%;
 }
