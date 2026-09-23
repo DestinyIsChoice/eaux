@@ -86,7 +86,7 @@ form.show {
     visibility: visible;
 }
 
-input[name="song_search"], input[name="artist_search"] {
+input[name="song-search"], input[name="artist-search"] {
     background-color: #232634;
     border: 1px solid #292c3c;
     border-radius: 6px;
@@ -98,7 +98,7 @@ input[name="song_search"], input[name="artist_search"] {
     width: 100%;
 }
 
-input[name="song_search"]:focus, input[name="artist_search"]:focus {
+input[name="song-search"]:focus, input[name="artist-search"]:focus {
     background-color: #303446;
     border-color: #232634;
     outline: none;

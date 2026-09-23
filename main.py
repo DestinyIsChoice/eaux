@@ -37,11 +37,11 @@ def tick_duration(update):
 
 def generic_genre(genre):
     if flask.request.method == "POST":
-        if flask.request.form.get("initial_load") != "true":
+        if flask.request.form.get("initial-load") != "true":
             for i in range(5):
                 try:
-                    song_name = flask.request.form["song_search"]
-                    artist_name = flask.request.form["artist_search"]
+                    song_name = flask.request.form["song-search"]
+                    artist_name = flask.request.form["artist-search"]
                     youtube = pytubefix.Search(
                         f"{song_name} by {artist_name}").results[0]
 

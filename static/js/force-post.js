@@ -1,1 +1,1 @@
-document.getElementById("forcePost").submit();
+document.getElementById("force-post").submit();

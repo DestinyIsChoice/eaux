@@ -1,12 +1,12 @@
 const audio = document.getElementById("audio");
-const source = document.getElementById("source");
+const form = document.getElementById("song-form");
 const genre = document.getElementById("genre").dataset.genre;
+const source = document.getElementById("source");
 
 function updateAudioSource() {
   fetch(`queue/${genre}`)
     .then((response) => response.json())
     .then((data) => {
-      const isPlaying = !audio.paused;
       const newUrl = data.queue
         ? `${data.queue[0].url}#t=${data.queue[0].timestamp}`
         : "";
@@ -18,7 +18,7 @@ function updateAudioSource() {
       ) {
         audio.load();
       }
-      if (isPlaying) {
+      if (!audio.paused) {
         audio.play().catch(() => {
         });
       }
@@ -36,6 +36,7 @@ function updateAudioSource() {
 }
 
 setInterval(updateAudioSource, 1000);
+
 document.addEventListener("DOMContentLoaded", () => {
   const dropdownTrigger = document.querySelector(".form-dropdown-trigger");
   const dropdownForm = document.querySelector("form");
@@ -50,4 +51,12 @@ document.addEventListener("DOMContentLoaded", () => {
       }
     });
   }
+});
+
+form.addEventListener("submit", async (e) => {
+  e.preventDefault();
+  await fetch(`/${genre}`, {
+   method: "POST",
+   body: new FormData(form)
+  });
 });
