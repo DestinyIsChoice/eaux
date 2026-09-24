@@ -1,9 +1,10 @@
 const audio = document.getElementById("audio");
 const form = document.getElementById("song-form");
 const genre = document.getElementById("genre").dataset.genre;
+const list = document.getElementById("list");
 const source = document.getElementById("source");
 
-function updateAudioSource() {
+function updateContent() {
   fetch(`queue/${genre}`)
     .then((response) => response.json())
     .then((data) => {
@@ -22,7 +23,10 @@ function updateAudioSource() {
         audio.play().catch(() => {
         });
       }
-      document.getElementById("list").innerHTML = data.queue
+      document.documentElement.style.setProperty("--primary-color", data.queue[0].colors[1]);
+      document.documentElement.style.setProperty("--secondary-color", data.queue[0].colors[0]);
+      document.documentElement.style.setProperty("--tertiary-color", data.queue[0].colors[2]);
+      const newHTML = data.queue
         .map(
           (song) =>
             `${song.song_name.toLowerCase()}
@@ -30,12 +34,26 @@ function updateAudioSource() {
                         <br>`,
         )
         .join("");
+      if (newHTML !== list.innerHTML) {
+        list.style.height = `${list.offsetHeight}px`;
+        const clone = list.cloneNode(false);
+        clone.style.visibility = "hidden";
+        clone.style.position = "absolute";
+        clone.style.height = "auto";
+        clone.innerHTML = newHTML;
+        list.parentNode.appendChild(clone);
+        const targetHeight = clone.scrollHeight;
+        clone.remove();
+        list.innerHTML = newHTML;
+        void list.offsetHeight;
+        list.style.height = `${targetHeight}px`;
+      }
     })
     .catch(() => {
     });
 }
 
-setInterval(updateAudioSource, 1000);
+setInterval(updateContent, 1000);
 
 document.addEventListener("DOMContentLoaded", () => {
   const dropdownTrigger = document.querySelector(".form-dropdown-trigger");
@@ -56,7 +74,7 @@ document.addEventListener("DOMContentLoaded", () => {
 form.addEventListener("submit", async (event) => {
   event.preventDefault();
   await fetch(`/${genre}`, {
-   method: "POST",
-   body: new FormData(form)
+    method: "POST",
+    body: new FormData(form)
   });
 });

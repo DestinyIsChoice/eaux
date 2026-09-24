@@ -21,10 +21,10 @@ dotenv.load_dotenv()
 
 
 app = flask.Flask(__name__)
-queues = {}
 auth_password = os.getenv("AUTH_PASSWORD")
 auth_username = os.getenv("AUTH_USERNAME")
 genres = os.getenv("GENRES")
+queues = {}
 update_seconds = os.getenv("UPDATE_SECONDS")
 
 
@@ -40,7 +40,6 @@ def tick_duration(update):
 
 def generic_genre(genre):
     if flask.request.method == "POST":
-        colors = {"text": "#ca9ee6", "shadow": "#232634"}
         if flask.request.form.get("initial-load") != "true":
             for i in range(5):
                 try:
@@ -52,13 +51,8 @@ def generic_genre(genre):
                         """)
                     if not song_search.results:
                         song_search = pytubefix.Search(
-                        f"{song_name} by {artist_name}")
+                            f"{song_name} by {artist_name}")
                     song = song_search.results[0]
-                    colors_list = [f"#{rgb[0]:02x}{rgb[1]:02x}{rgb[2]:02x}"
-                              for rgb in colorthief.ColorThief(io.BytesIO(
-                            urllib.request.urlopen(song.thumbnail_url).read()))
-                              .get_palette(color_count=2, quality=1)[:2]]
-                    colors = {"text": colors_list[0], "shadow": colors_list[1]}
 
                     # noinspection PyTypeChecker
                     url = (yt_dlp.YoutubeDL({
@@ -69,20 +63,29 @@ def generic_genre(genre):
                     while True:
                         try:
                             length = float(json.loads(subprocess.run(
-                                f"ffprobe -v error -show_entries format=duration -of "
-                                f"json {url}",
+                                f"ffprobe "
+                                f"-v error "
+                                f"-show_entries "
+                                f"format=duration "
+                                f"-of json {url}",
                                 stdout=subprocess.PIPE,
                                 stderr=subprocess.PIPE,
                                 text=True).stdout)["format"]["duration"])
                             break
                         except KeyError:
                             pass
+                    colors = [f"#{rgb[0]:02x}{rgb[1]:02x}{rgb[2]:02x}"
+                              for rgb in colorthief.ColorThief(io.BytesIO(
+                                urllib.request.urlopen(song.thumbnail_url)
+                                .read())).get_palette(
+                            color_count=2, quality=1)]
                     queues[genre].append({
                         "song_name": song_name,
                         "artist_name": artist_name,
                         "url": url,
                         "length": length,
-                        "timestamp": 0
+                        "timestamp": 0,
+                        "colors": colors
                     })
                     break
                 except pytubefix.exceptions.BotDetection:

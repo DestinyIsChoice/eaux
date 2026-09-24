@@ -1,49 +1,57 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <title>eAux - {{ genre }}</title>
-    <link rel="stylesheet" href="../static/css/index.css">
+    <title>eaux - {{ genre }}</title>
+    <style>
+        :root {
+            --primary-color: #ca9ee6;
+            --secondary-color: #232634;
+            --tertiary-color: #494d64;
+        }
+    </style>
+    <link rel="stylesheet" href="../static/css/style.css">
     <link rel="stylesheet" href="../static/css/genre.css">
     <script src="../static/js/genre.js" defer></script>
 </head>
 <body>
-    <div id="genre" data-genre="{{ genre }}"></div>
-    <audio id="audio" autoplay controls hidden>
-        <source
+<div id="genre" data-genre="{{ genre }}"></div>
+<audio id="audio" autoplay controls hidden>
+    <source
             id="source"
             src=""
             type="audio/x-wav;codec=pcm"
-        >
-        your browser does not support audio on this website!
-    </audio>
-    <div class="list-container">
-        <p id="list"></p>
-    </div>
-    <div class="form-dropdown-container">
-        <button type="button" class="form-dropdown-trigger">
-            submit a song
-        </button>
-    </div>
-    <form id="song-form" method="POST">
-        <label>
-            <input
+    >
+    your browser does not support audio on this website!
+</audio>
+<div class="list-container">
+    <p id="list"></p>
+</div>
+<div class="form-dropdown-container">
+    <button type="button" class="form-dropdown-trigger">
+        submit a song
+    </button>
+</div>
+<form id="song-form" method="POST">
+    <label>
+        <input
                 spellcheck="false"
                 name="song-search"
                 placeholder="song"
-            >
-        </label>
-        <label>
-            <input
+        >
+    </label>
+    <label>
+        <input
                 spellcheck="false"
                 name="artist-search"
                 placeholder="artist"
-            >
-        </label>
-        <button
+        >
+    </label>
+    <button
             type="submit"
             name="submit"
             value="clicked"
-        >submit</button>
-    </form>
+    >submit
+    </button>
+</form>
 </body>
 </html>

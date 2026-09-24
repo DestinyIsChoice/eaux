@@ -2,24 +2,24 @@
 <html lang="en">
 <head>
     <title>eAux</title>
-    <link rel="stylesheet" href="../static/css/index.css">
     <link rel="stylesheet" href="../static/css/style.css">
+    <link rel="stylesheet" href="../static/css/index.css">
 </head>
 <body>
-    <div class="eaux-container">
-        <p id="eaux">eAux</p>
+<div class="eaux-container">
+    <p id="eaux">eaux</p>
+</div>
+<div class="genres">
+    {{ genres_list|safe }}
+</div>
+<div class="policy-container">
+    <span class="policy-icon">i</span>
+    <div class="policy">
+        Using this website to download or distribute material without
+        permission is prohibited. This tool is not intended to distribute
+        material without permission. This tool is for use only for
+        non-commercial purposes.
     </div>
-    <div class="genres">
-        {{ genres_list|safe }}
-    </div>
-    <div class="policy-container">
-        <span class="policy-icon">i</span>
-        <div class="policy">
-            Using this website to download or distribute material without
-             permission is prohibited. This tool is not intended to distribute
-             material without permission. This tool is for use only for
-             non-commercial purposes.
-        </div>
-    </div>
+</div>
 </body>
 </html>
