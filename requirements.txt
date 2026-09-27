@@ -1,0 +1,8 @@
+colorthief
+python-dotenv
+flask
+Flask-BasicAuth
+Paste
+pytubefix
+waitress
+yt-dlp

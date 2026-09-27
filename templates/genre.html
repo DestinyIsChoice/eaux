@@ -6,12 +6,22 @@
         :root {
             --primary-color: #ca9ee6;
             --secondary-color: #232634;
-            --tertiary-color: #494d64;
+            --background-0-color: #232634;
+            --background-1-color: #292c3c;
+            --background-2-color: #303446;
+            --background-3-color: #414559;
+            --background-4-color: #494d64;
+            --background-5-color: #51576d;
         }
     </style>
     <link rel="stylesheet" href="../static/css/style.css">
     <link rel="stylesheet" href="../static/css/genre.css">
-    <script src="../static/js/genre.js" defer></script>
+    {% if dev_mode %}
+        <script type="module" src="http://localhost:5173/@vite/client"></script>
+        <script type="module" src="http://localhost:5173/static/js/genre.js"></script>
+    {% else %}
+        <script type="module" src="{{ url_for('static', filename='dist/' + vite_asset('static/js/genre.js')) }}"></script>
+    {% endif %}
 </head>
 <body>
 <div id="genre" data-genre="{{ genre }}"></div>

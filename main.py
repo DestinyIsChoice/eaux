@@ -1,18 +1,18 @@
 import io
+import json
 import os
 import subprocess
+import threading
+import time
 import urllib.request
 
 import colorthief
 import dotenv
 import flask
 import flask_basicauth
-import json
 import paste.translogger
 import pytubefix
 import pytubefix.exceptions
-import threading
-import time
 import waitress
 import yt_dlp
 
@@ -20,12 +20,15 @@ import yt_dlp
 dotenv.load_dotenv()
 
 
+GENRES = os.getenv("GENRES")
+IS_DEV = os.getenv("FLASK_ENV") == "development"
+UPDATE_SECONDS = os.getenv("UPDATE_SECONDS")
+
+
 app = flask.Flask(__name__)
 auth_password = os.getenv("AUTH_PASSWORD")
 auth_username = os.getenv("AUTH_USERNAME")
-genres = os.getenv("GENRES")
 queues = {}
-update_seconds = os.getenv("UPDATE_SECONDS")
 
 
 def tick_duration(update):
@@ -62,39 +65,37 @@ def generic_genre(genre):
                            .get("url"))
                     while True:
                         try:
-                            length = float(json.loads(subprocess.run(
-                                f"ffprobe "
-                                f"-v error "
-                                f"-show_entries "
-                                f"format=duration "
-                                f"-of json {url}",
+                            length = float(json.loads(subprocess.run([
+                                "ffprobe ",
+                                "-v error ",
+                                "-show_entries ",
+                                "format=duration ",
+                                "-of json ",
+                                url],
                                 stdout=subprocess.PIPE,
                                 stderr=subprocess.PIPE,
                                 text=True).stdout)["format"]["duration"])
                             break
                         except KeyError:
                             pass
-                    colors = [f"#{rgb[0]:02x}{rgb[1]:02x}{rgb[2]:02x}"
-                              for rgb in colorthief.ColorThief(io.BytesIO(
-                                urllib.request.urlopen(song.thumbnail_url)
-                                .read())).get_palette(
-                            color_count=2, quality=1)]
                     queues[genre].append({
                         "song_name": song_name,
                         "artist_name": artist_name,
                         "url": url,
                         "length": length,
                         "timestamp": 0,
-                        "colors": colors
+                        "colors": colorthief.ColorThief(io.BytesIO(
+                            urllib.request.urlopen(song.thumbnail_url).read()))
+                        .get_palette(color_count=2, quality=1)
                     })
                     break
                 except pytubefix.exceptions.BotDetection:
                     pass
                 except pytubefix.exceptions.VideoUnavailable:
                     break
-        return flask.render_template("genre.html", genre=genre)
+        return flask.render_template("genre.html", genre=genre, dev_mode=IS_DEV)
     else:
-        return flask.render_template("force-post.html")
+        return flask.render_template("force-post.html", dev_mode=IS_DEV)
 
 
 def generic_genre_queue(genre):
@@ -119,6 +120,15 @@ def generate_genres(genres_list):
             defaults={"genre": genre},
             methods=["GET"]
         )
+
+
+def get_vite_asset(entry_name):
+    try:
+        with open("static/dist/.vite/manifest.json", "r") as f:
+            manifest = json.load(f)
+            return manifest.get(entry_name, {}).get("file", entry_name)
+    except (FileNotFoundError, json.JSONDecodeError):
+        return entry_name
 
 
 @app.route("/")
@@ -154,15 +164,16 @@ if __name__ == "__main__":
         auth_password = ""
     if not auth_username:
         auth_username = ""
-    if not genres:
+    if not GENRES:
         genres = ""
-    if not update_seconds:
+    if not UPDATE_SECONDS:
         update_seconds = "1"
-    update_seconds = int(update_seconds)
+    app.jinja_env.globals.update(vite_asset=get_vite_asset)
+    update_seconds = int(UPDATE_SECONDS)
     app.config["BASIC_AUTH_PASSWORD"] = auth_password
     app.config["BASIC_AUTH_USERNAME"] = auth_username
     flask_basicauth.BasicAuth(app)
-    generate_genres(genres.split(","))
+    generate_genres(GENRES.split(","))
     tick_duration_thread = threading.Thread(target=tick_duration,
                                             daemon=True,
                                             args=(update_seconds,))

@@ -9,6 +9,11 @@
     -webkit-text-fill-color: transparent;
 }
 
+body {
+    background-color: var(--background-2-color);
+    transition: background-color 0.2s ease-in
+}
+
 .list-container {
     display: block;
     max-width: 400px;
@@ -37,10 +42,10 @@
 }
 
 .form-dropdown-trigger {
-    background-color: #494d64;
+    background-color: var(--background-4-color);
     border: none;
     border-radius: 6px;
-    box-shadow: -8px 8px 0 #232634;
+    box-shadow: -8px 8px 0 var(--background-0-color);
     color: var(--primary-color);
     cursor: pointer;
     display: block;
@@ -55,7 +60,7 @@
 
 .form-dropdown-trigger:hover {
     background-color: var(--primary-color);
-    color: #494d64;
+    color: var(--background-4-color);
     text-shadow: 0 0 0 var(--secondary-color);
     transform: scale(1.02);
     transition: background-color 0.2s ease-in, color 0.2s ease-in, text-shadow 0.2s ease-in;
@@ -66,7 +71,7 @@
 }
 
 form {
-    background-color: #414559;
+    background-color: var(--background-3-color);;
     border-radius: 12px;
     display: flex;
     flex-direction: column;
@@ -81,7 +86,7 @@ form {
 }
 
 form.show {
-    box-shadow: -8px 8px 0 #232634;
+    box-shadow: -8px 8px 0 var(--background-0-color);;
     margin-top: 20px;
     padding: 24px;
     max-height: 400px;
@@ -89,8 +94,8 @@ form.show {
 }
 
 input[name="song-search"], input[name="artist-search"] {
-    background-color: #232634;
-    border: 1px solid #292c3c;
+    background-color: var(--background-0-color);;
+    border: 1px solid var(--background-1-color);;
     border-radius: 6px;
     color: var(--primary-color);
     font-size: 1rem;
@@ -102,17 +107,17 @@ input[name="song-search"], input[name="artist-search"] {
 }
 
 input[name="song-search"]:focus, input[name="artist-search"]:focus {
-    background-color: #303446;
-    border-color: #232634;
+    background-color: var(--background-2-color);;
+    border-color: var(--background-0-color);;
     outline: none;
 }
 
 input::placeholder {
-    color: #51576d;
+    color: var(--background-5-color);;
 }
 
 button[name="submit"] {
-    background-color: #494d64;
+    background-color: var(--background-4-color);
     border: none;
     border-radius: 6px;
     color: var(--primary-color);
@@ -127,7 +132,7 @@ button[name="submit"] {
 
 button[name="submit"]:hover {
     background-color: var(--primary-color);
-    color: #494d64;
+    color: var(--background-4-color);
     text-shadow: 0 0 0 var(--secondary-color);
     transform: scale(1.02);
     transition: background-color 0.2s ease-in, color 0.2s ease-in, text-shadow 0.2s ease-in;

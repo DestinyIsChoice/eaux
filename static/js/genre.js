@@ -1,3 +1,5 @@
+import convert from "color-convert";
+
 const audio = document.getElementById("audio");
 const form = document.getElementById("song-form");
 const genre = document.getElementById("genre").dataset.genre;
@@ -23,9 +25,18 @@ function updateContent() {
         audio.play().catch(() => {
         });
       }
-      document.documentElement.style.setProperty("--primary-color", data.queue[0].colors[1]);
-      document.documentElement.style.setProperty("--secondary-color", data.queue[0].colors[0]);
-      document.documentElement.style.setProperty("--tertiary-color", data.queue[0].colors[2]);
+      document.documentElement.style.setProperty("--primary-color",
+        `#${convert.hsv.hex(convert.rgb.hsv(...data.queue[0].colors[1])[0], 31.3, 90.2)}`);
+      document.documentElement.style.setProperty("--secondary-color",
+        `#${convert.hsv.hex(convert.rgb.hsv(...data.queue[0].colors[2])[0], 32.7, 20.4)}`);
+      const [backgroundR, backgroundG, backgroundB] = convert.hsv.rgb(convert.rgb.hsv(
+        ...data.queue[0].colors[0])[0], 32.7, 20.4);
+      document.documentElement.style.setProperty("--background-0-color", `#${convert.rgb.hex(backgroundR, backgroundG, backgroundB)}`);
+      document.documentElement.style.setProperty("--background-1-color", `#${convert.rgb.hex(backgroundR * 1.171, backgroundG * 1.171, backgroundB * 1.171)}`);
+      document.documentElement.style.setProperty("--background-2-color", `#${convert.rgb.hex(backgroundR * 1.371, backgroundG * 1.371, backgroundB * 1.371)}`);
+      document.documentElement.style.setProperty("--background-3-color", `#${convert.rgb.hex(backgroundR * 1.857, backgroundG * 1.857, backgroundB * 1.857)}`);
+      document.documentElement.style.setProperty("--background-4-color", `#${convert.rgb.hex(backgroundR * 2.086, backgroundG * 2.086, backgroundB * 2.086)}`);
+      document.documentElement.style.setProperty("--background-5-color", `#${convert.rgb.hex(backgroundR * 2.314, backgroundG * 2.314, backgroundB * 2.314)}`);
       const newHTML = data.queue
         .map(
           (song) =>

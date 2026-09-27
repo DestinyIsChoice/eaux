@@ -3,7 +3,12 @@
 <head>
     <title>eaux - loading</title>
     <link rel="stylesheet" href="../static/css/style.css">
-    <script src="../static/js/force-post.js" defer></script>
+    {% if dev_mode %}
+        <script type="module" src="http://localhost:5173/@vite/client"></script>
+        <script type="module" src="http://localhost:5173/static/js/force-post.js"></script>
+    {% else %}
+        <script src="{{ url_for('static', filename='dist/' + vite_asset('static/js/force-post.js')) }}"></script>
+    {% endif %}
 </head>
 <body>
 <form id="force-post" method="POST">
