@@ -10,7 +10,7 @@ function updateContent() {
   fetch(`queue/${genre}`)
     .then((response) => response.json())
     .then((data) => {
-      const newUrl = data.queue
+      const newUrl = data.queue.length !== 0
         ? `${data.queue[0].url}#t=${data.queue[0].timestamp}`
         : "";
       const oldUrl = source.src;
@@ -26,11 +26,11 @@ function updateContent() {
         });
       }
       document.documentElement.style.setProperty("--primary-color",
-        `#${convert.hsv.hex(convert.rgb.hsv(...data.queue[0].colors[1])[0], 31.3, 90.2)}`);
+        data.queue.length !== 0 ? `#${convert.hsv.hex(convert.rgb.hsv(...data.queue[0].colors[1])[0], 31.3, 90.2)}` : "#ca9ee6");
       document.documentElement.style.setProperty("--secondary-color",
-        `#${convert.hsv.hex(convert.rgb.hsv(...data.queue[0].colors[2])[0], 32.7, 20.4)}`);
-      const [backgroundR, backgroundG, backgroundB] = convert.hsv.rgb(convert.rgb.hsv(
-        ...data.queue[0].colors[0])[0], 32.7, 20.4);
+        data.queue.length !== 0 ? `#${convert.hsv.hex(convert.rgb.hsv(...data.queue[0].colors[2])[0], 32.7, 20.4)}` : "#232634");
+      const [backgroundR, backgroundG, backgroundB] = data.queue.length !== 0 ? convert.hsv.rgb(convert.rgb.hsv(
+        ...data.queue[0].colors[0])[0], 32.7, 20.4) : [35, 38, 52];
       document.documentElement.style.setProperty("--background-0-color", `#${convert.rgb.hex(backgroundR, backgroundG, backgroundB)}`);
       document.documentElement.style.setProperty("--background-1-color", `#${convert.rgb.hex(backgroundR * 1.171, backgroundG * 1.171, backgroundB * 1.171)}`);
       document.documentElement.style.setProperty("--background-2-color", `#${convert.rgb.hex(backgroundR * 1.371, backgroundG * 1.371, backgroundB * 1.371)}`);

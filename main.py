@@ -1,5 +1,7 @@
 import io
+import itertools
 import json
+import math
 import os
 import subprocess
 import threading
@@ -41,6 +43,25 @@ def tick_duration(update):
         time.sleep(update)
 
 
+def get_distinct_palette(image_path):
+
+    def get_distance(color1, color2):
+        return math.sqrt(sum((c1 - c2) ** 2 for c1, c2 in zip(color1, color2)))
+
+    colors = None
+    max_distance = -1
+    for combo in itertools.combinations(
+            colorthief.ColorThief(image_path).get_palette(
+                color_count=10, quality=1), 3):
+        combo_min_distance = min(get_distance(combo[0], combo[1]),
+                                 get_distance(combo[1], combo[2]),
+                                 get_distance(combo[0], combo[2]))
+        if combo_min_distance > max_distance:
+            max_distance = combo_min_distance
+            colors = combo
+    return colors
+
+
 def generic_genre(genre):
     if flask.request.method == "POST":
         if flask.request.form.get("initial-load") != "true":
@@ -66,11 +87,13 @@ def generic_genre(genre):
                     while True:
                         try:
                             length = float(json.loads(subprocess.run([
-                                "ffprobe ",
-                                "-v error ",
-                                "-show_entries ",
-                                "format=duration ",
-                                "-of json ",
+                                "ffprobe",
+                                "-v",
+                                "error",
+                                "-show_entries",
+                                "format=duration",
+                                "-of",
+                                "json",
                                 url],
                                 stdout=subprocess.PIPE,
                                 stderr=subprocess.PIPE,
@@ -84,16 +107,17 @@ def generic_genre(genre):
                         "url": url,
                         "length": length,
                         "timestamp": 0,
-                        "colors": colorthief.ColorThief(io.BytesIO(
+                        "colors": get_distinct_palette(io.BytesIO(
                             urllib.request.urlopen(song.thumbnail_url).read()))
-                        .get_palette(color_count=2, quality=1)
                     })
                     break
                 except pytubefix.exceptions.BotDetection:
                     pass
                 except pytubefix.exceptions.VideoUnavailable:
                     break
-        return flask.render_template("genre.html", genre=genre, dev_mode=IS_DEV)
+        return flask.render_template("genre.html",
+                                     genre=genre,
+                                     dev_mode=IS_DEV)
     else:
         return flask.render_template("force-post.html", dev_mode=IS_DEV)
 
@@ -145,6 +169,11 @@ def index():
                                      """
                                      for genre in queues])
                                  )
+
+
+@app.errorhandler(404)
+def page_not_found(e):
+    return flask.render_template("404.html"), 404
 
 
 class CustomTransLogger:
