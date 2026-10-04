@@ -115,7 +115,8 @@ def generic_genre(genre):
                             "length": length,
                             "timestamp": 0,
                             "colors": get_distinct_palette(io.BytesIO(
-                                urllib.request.urlopen(song.thumbnail_url).read()))
+                                urllib.request.urlopen(
+                                    song.thumbnail_url).read()))
                         })
                         break
                     except pytubefix.exceptions.BotDetection:
@@ -139,15 +140,15 @@ def generic_genre(genre):
                                          f"{album_name} by {artist_name} "
                                          f"Provided to YouTube by",
                                          limit=1).next())
-                                     ["result"][0]["id"]}"),
+                                         ["result"][0]["id"]}"),
                                     download=False)
 
                     # noinspection PyUnresolvedReferences
                     colors = [f"#{rgb[0]:02x}{rgb[1]:02x}{rgb[2]:02x}"
                               for rgb in colorthief.ColorThief(io.BytesIO(
-                            urllib.request.urlopen(album.get("thumbnails")[0]["url"])
-                            .read())).get_palette(
-                            color_count=2, quality=1)]
+                            urllib.request.urlopen(
+                                album.get("thumbnails")[0]["url"])
+                            .read())).get_palette(color_count=2, quality=1)]
                     for song in album["entries"]:
                         for i in range(5):
                             try:
@@ -156,7 +157,8 @@ def generic_genre(genre):
                                 urls.append(yt_dlp.YoutubeDL({
                                         "format": "bestaudio/best",
                                         "quiet": True}
-                                    ).extract_info(song.get("url"), download=False)
+                                    ).extract_info(
+                                    song.get("url"), download=False)
                                            .get("url"))
                                 break
                             except yt_dlp.utils.YoutubeDLError:
@@ -165,15 +167,32 @@ def generic_genre(genre):
 
                     # noinspection PyTypeChecker
                     albums[genre].append({
-                        "song_name": album_name,
+                        "album_name": album_name,
                         "artist_name": artist_name,
-                        "songs": [(song.get("title"), urls[i]) for i, song in enumerate(album["entries"])],
+                        "songs": [(song.get("title"), urls[i])
+                                  for i, song in enumerate(album["entries"])],
                         "colors": colors
                     })
+                    app.add_url_rule(
+                        f"/{genre}/{album_name}",
+                        view_func=generic_album,
+                        defaults={"genre": genre, "album": album_name},
+                        methods=["GET", "POST"]
+                    )
                 except yt_dlp.utils.DownloadError:
                     pass
         return flask.render_template("genre.html",
                                      genre=genre,
+                                     dev_mode=IS_DEV)
+    else:
+        return flask.render_template("force-post.html", dev_mode=IS_DEV)
+
+
+def generic_album(genre, album):
+    if flask.request.method == "POST":
+        return flask.render_template("genre.html",
+                                     genre=genre,
+                                     album=album,
                                      dev_mode=IS_DEV)
     else:
         return flask.render_template("force-post.html", dev_mode=IS_DEV)

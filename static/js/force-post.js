@@ -3,6 +3,6 @@ document.addEventListener("DOMContentLoaded", () => {
   if (form) {
     form.submit();
   } else {
-    console.error("Form element #force-post was not found in the DOM.");
+    console.error("#force-post was not found in the DOM.");
   }
 });
