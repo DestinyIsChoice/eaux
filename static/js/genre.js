@@ -1,13 +1,14 @@
 import convert from "color-convert";
 
 const audio = document.getElementById("audio");
-const form = document.getElementById("song-form");
+const songForm = document.getElementById("song-form");
+const albumForm = document.getElementById("album-form");
 const genre = document.getElementById("genre").dataset.genre;
 const list = document.getElementById("list");
 const source = document.getElementById("source");
 
 function updateContent() {
-  fetch(`queue/${genre}`)
+  fetch(`${genre}/queue`)
     .then((response) => response.json())
     .then((data) => {
       const newUrl = data.queue.length !== 0
@@ -67,25 +68,49 @@ function updateContent() {
 setInterval(updateContent, 1000);
 
 document.addEventListener("DOMContentLoaded", () => {
-  const dropdownTrigger = document.querySelector(".form-dropdown-trigger");
-  const dropdownForm = document.querySelector("form");
-  if (dropdownTrigger && dropdownForm) {
-    dropdownTrigger.addEventListener("click", (event) => {
+  const songTrigger = document.querySelector(".song-form-dropdown-trigger");
+  const albumTrigger = document.querySelector(".album-form-dropdown-trigger");
+  const songForm = document.getElementById("song-form");
+  const albumForm = document.getElementById("album-form");
+  if (songTrigger && songForm) {
+    songTrigger.addEventListener("click", (event) => {
       event.stopPropagation();
-      dropdownForm.classList.toggle("show");
-    });
-    document.addEventListener("click", (event) => {
-      if (!dropdownForm.contains(event.target) && event.target !== dropdownTrigger) {
-        dropdownForm.classList.remove("show");
-      }
+      if (albumForm) albumForm.classList.remove("show");
+      songForm.classList.toggle("show");
     });
   }
-});
-
-form.addEventListener("submit", async (event) => {
-  event.preventDefault();
-  await fetch(`/${genre}`, {
-    method: "POST",
-    body: new FormData(form)
+  if (albumTrigger && albumForm) {
+    albumTrigger.addEventListener("click", (event) => {
+      event.stopPropagation();
+      if (songForm) songForm.classList.remove("show");
+      albumForm.classList.toggle("show");
+    });
+  }
+  document.addEventListener("click", (event) => {
+    const clickedTarget = event.target;
+    if (songForm && songForm.classList.contains("show")) {
+      if (!songForm.contains(clickedTarget) && clickedTarget !== songTrigger) {
+        songForm.classList.remove("show");
+      }
+    }
+    if (albumForm && albumForm.classList.contains("show")) {
+      if (!albumForm.contains(clickedTarget) && clickedTarget !== albumTrigger) {
+        albumForm.classList.remove("show");
+      }
+    }
+  });
+  songForm.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    await fetch(`/${genre}`, {
+      method: "POST",
+      body: new FormData(songForm)
+    });
+  });
+  albumForm.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    await fetch(`/${genre}`, {
+      method: "POST",
+      body: new FormData(albumForm)
+    });
   });
 });

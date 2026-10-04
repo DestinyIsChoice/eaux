@@ -1,6 +1,6 @@
 body {
     background-color: var(--background-2-color);
-    transition: background-color 0.2s ease-in
+    transition: background-color 0.2s ease-in;
 }
 
 .back-button-container {
@@ -73,13 +73,16 @@ body {
     max-height: 300px;
 }
 
-.form-dropdown-container {
+.album-form-dropdown-container,
+.song-form-dropdown-container {
     display: block;
     max-width: 400px;
     width: 100%;
+    margin-bottom: 10px;
 }
 
-.form-dropdown-trigger {
+.album-form-dropdown-trigger,
+.song-form-dropdown-trigger {
     background-color: var(--background-4-color);
     border: none;
     border-radius: 6px;
@@ -96,7 +99,8 @@ body {
     width: 80%;
 }
 
-.form-dropdown-trigger:hover {
+.album-form-dropdown-trigger:hover,
+.song-form-dropdown-trigger:hover {
     background-color: var(--primary-color);
     color: var(--background-4-color);
     text-shadow: 0 0 0 var(--secondary-color);
@@ -104,12 +108,14 @@ body {
     transition: background-color 0.2s ease-in, color 0.2s ease-in, text-shadow 0.2s ease-in;
 }
 
+.album-form-dropdown-trigger:active,
 .form-dropdown-trigger:active {
     transform: scale(0.98);
 }
 
-form {
-    background-color: var(--background-3-color);;
+#song-form, 
+#album-form {
+    background-color: var(--background-3-color);
     border-radius: 12px;
     display: flex;
     flex-direction: column;
@@ -118,22 +124,27 @@ form {
     max-width: 400px;
     overflow: hidden;
     padding: 0 24px;
-    transition: margin-top 0.3s ease-out, max-height 0.3s ease-out, padding 0.3s ease-out, visibility 0.3s ease-out;
+    margin: 0 auto;
+    transition: margin-top 0.3s ease-out, margin-bottom 0.3s ease-out, max-height 0.3s ease-out, padding 0.3s ease-out, visibility 0.3s ease-out;
     visibility: hidden;
     width: 100%;
 }
 
-form.show {
-    box-shadow: -8px 8px 0 var(--background-0-color);;
+#song-form.show, 
+#album-form.show {
+    box-shadow: -8px 8px 0 var(--background-0-color);
     margin-top: 20px;
+    margin-bottom: 25px;
     padding: 24px;
     max-height: 400px;
     visibility: visible;
 }
 
-input[name="song-search"], input[name="artist-search"] {
-    background-color: var(--background-0-color);;
-    border: 1px solid var(--background-1-color);;
+input[name="song-search"], 
+input[name="album-search"], 
+input[name="artist-search"] {
+    background-color: var(--background-0-color);
+    border: 1px solid var(--background-1-color);
     border-radius: 6px;
     color: var(--primary-color);
     font-size: 1rem;
@@ -145,17 +156,20 @@ input[name="song-search"], input[name="artist-search"] {
     width: 100%;
 }
 
-input[name="song-search"]:focus, input[name="artist-search"]:focus {
-    background-color: var(--background-2-color);;
-    border-color: var(--background-0-color);;
+input[name="song-search"]:focus, 
+input[name="album-search"]:focus, 
+input[name="artist-search"]:focus {
+    background-color: var(--background-2-color);
+    border-color: var(--background-0-color);
     outline: none;
 }
 
 input::placeholder {
-    color: var(--background-5-color);;
+    color: var(--background-5-color);
 }
 
-button[name="submit"] {
+button[name="song-submit"], 
+button[name="album-submit"] {
     background-color: var(--background-4-color);
     border: none;
     border-radius: 6px;
@@ -169,7 +183,8 @@ button[name="submit"] {
     width: 100%;
 }
 
-button[name="submit"]:hover {
+button[name="song-submit"]:hover, 
+button[name="album-submit"]:hover {
     background-color: var(--primary-color);
     color: var(--background-4-color);
     text-shadow: 0 0 0 var(--secondary-color);
@@ -177,6 +192,7 @@ button[name="submit"]:hover {
     transition: background-color 0.2s ease-in, color 0.2s ease-in, text-shadow 0.2s ease-in;
 }
 
-button[name="submit"]:active {
+button[name="song-submit"]:active, 
+button[name="album-submit"]:active {
     transform: scale(0.98);
 }

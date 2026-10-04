@@ -1,3 +1,4 @@
+import asyncio
 import io
 import itertools
 import json
@@ -13,10 +14,12 @@ import dotenv
 import flask
 import flask_basicauth
 import paste.translogger
+import py_yt
 import pytubefix
 import pytubefix.exceptions
 import waitress
 import yt_dlp
+import yt_dlp.utils
 
 
 dotenv.load_dotenv()
@@ -30,10 +33,11 @@ UPDATE_SECONDS = os.getenv("UPDATE_SECONDS")
 app = flask.Flask(__name__)
 auth_password = os.getenv("AUTH_PASSWORD")
 auth_username = os.getenv("AUTH_USERNAME")
+albums = {}
 queues = {}
 
 
-def tick_duration(update):
+def tick_queue(update):
     while True:
         for genre in queues:
             if queues[genre]:
@@ -65,61 +69,121 @@ def get_distinct_palette(image_path):
 def generic_genre(genre):
     if flask.request.method == "POST":
         if flask.request.form.get("initial-load") != "true":
-            for i in range(5):
-                try:
-                    song_name = flask.request.form["song-search"]
-                    artist_name = flask.request.form["artist-search"]
-                    song_search = pytubefix.Search(
-                        f"""
-                        {song_name} by {artist_name} "Provided to YouTube"
-                        """)
-                    if not song_search.results:
+            if "song-search" in flask.request.form:
+                for i in range(5):
+                    try:
+                        song_name = flask.request.form["song-search"]
+                        artist_name = flask.request.form["artist-search"]
                         song_search = pytubefix.Search(
-                            f"{song_name} by {artist_name}")
-                    song = song_search.results[0]
+                            f"""
+                            {song_name} by {artist_name} "Provided to YouTube"
+                            """)
+                        if not song_search.results:
+                            song_search = pytubefix.Search(
+                                f"{song_name} by {artist_name}")
+                        song = song_search.results[0]
+
+                        # noinspection PyTypeChecker
+                        url = (yt_dlp.YoutubeDL({
+                            "format": "bestaudio/best",
+                            "quiet": True}
+                        ).extract_info(song.watch_url, download=False)
+                               .get("url"))
+                        while True:
+                            try:
+
+                                # noinspection PyTypeChecker
+                                length = float(json.loads(subprocess.run([
+                                    "ffprobe",
+                                    "-v",
+                                    "error",
+                                    "-show_entries",
+                                    "format=duration",
+                                    "-of",
+                                    "json",
+                                    url],
+                                    stdout=subprocess.PIPE,
+                                    stderr=subprocess.PIPE,
+                                    text=True).stdout)["format"]["duration"])
+                                break
+                            except KeyError:
+                                pass
+                        queues[genre].append({
+                            "song_name": song_name,
+                            "artist_name": artist_name,
+                            "url": url,
+                            "length": length,
+                            "timestamp": 0,
+                            "colors": get_distinct_palette(io.BytesIO(
+                                urllib.request.urlopen(song.thumbnail_url).read()))
+                        })
+                        break
+                    except pytubefix.exceptions.BotDetection:
+                        pass
+                    except pytubefix.exceptions.VideoUnavailable:
+                        break
+            else:
+                try:
+                    album_name = flask.request.form["album-search"]
+                    artist_name = flask.request.form["artist-search"]
+                    urls = []
 
                     # noinspection PyTypeChecker
-                    url = (yt_dlp.YoutubeDL({
-                        "format": "bestaudio/best",
-                        "quiet": True}
-                    ).extract_info(song.watch_url, download=False)
-                           .get("url"))
-                    while True:
-                        try:
-                            length = float(json.loads(subprocess.run([
-                                "ffprobe",
-                                "-v",
-                                "error",
-                                "-show_entries",
-                                "format=duration",
-                                "-of",
-                                "json",
-                                url],
-                                stdout=subprocess.PIPE,
-                                stderr=subprocess.PIPE,
-                                text=True).stdout)["format"]["duration"])
-                            break
-                        except KeyError:
-                            pass
-                    queues[genre].append({
-                        "song_name": song_name,
+                    album = yt_dlp.YoutubeDL({
+                        "extract_flat": True,
+                        "skip_download": True,
+                        "quiet": True,
+                        "no_warnings": True
+                    }).extract_info((f"https://youtube.com/playlist?list="
+                                     f"{asyncio.run(py_yt.PlaylistsSearch(
+                                         f"{album_name} by {artist_name} "
+                                         f"Provided to YouTube by",
+                                         limit=1).next())
+                                     ["result"][0]["id"]}"),
+                                    download=False)
+
+                    # noinspection PyUnresolvedReferences
+                    colors = [f"#{rgb[0]:02x}{rgb[1]:02x}{rgb[2]:02x}"
+                              for rgb in colorthief.ColorThief(io.BytesIO(
+                            urllib.request.urlopen(album.get("thumbnails")[0]["url"])
+                            .read())).get_palette(
+                            color_count=2, quality=1)]
+                    for song in album["entries"]:
+                        for i in range(5):
+                            try:
+
+                                # noinspection PyTypeChecker
+                                urls.append(yt_dlp.YoutubeDL({
+                                        "format": "bestaudio/best",
+                                        "quiet": True}
+                                    ).extract_info(song.get("url"), download=False)
+                                           .get("url"))
+                                break
+                            except yt_dlp.utils.YoutubeDLError:
+                                urls.append("")
+                                break
+
+                    # noinspection PyTypeChecker
+                    albums[genre].append({
+                        "song_name": album_name,
                         "artist_name": artist_name,
-                        "url": url,
-                        "length": length,
-                        "timestamp": 0,
-                        "colors": get_distinct_palette(io.BytesIO(
-                            urllib.request.urlopen(song.thumbnail_url).read()))
+                        "songs": [(song.get("title"), urls[i]) for i, song in enumerate(album["entries"])],
+                        "colors": colors
                     })
-                    break
-                except pytubefix.exceptions.BotDetection:
+                except yt_dlp.utils.DownloadError:
                     pass
-                except pytubefix.exceptions.VideoUnavailable:
-                    break
         return flask.render_template("genre.html",
                                      genre=genre,
                                      dev_mode=IS_DEV)
     else:
         return flask.render_template("force-post.html", dev_mode=IS_DEV)
+
+
+def generic_genre_albums(genre):
+    if albums[genre]:
+        return flask.jsonify({"albums": albums[genre]})
+    else:
+        return flask.jsonify({"albums": []})
 
 
 def generic_genre_queue(genre):
@@ -131,6 +195,7 @@ def generic_genre_queue(genre):
 
 def generate_genres(genres_list):
     for genre in genres_list:
+        albums[genre] = []
         queues[genre] = []
         app.add_url_rule(
             f"/{genre}",
@@ -139,7 +204,13 @@ def generate_genres(genres_list):
             methods=["GET", "POST"]
         )
         app.add_url_rule(
-            f"/queue/{genre}",
+            f"/{genre}/albums",
+            view_func=generic_genre_albums,
+            defaults={"genre": genre},
+            methods=["GET"]
+        )
+        app.add_url_rule(
+            f"/{genre}/queue",
             view_func=generic_genre_queue,
             defaults={"genre": genre},
             methods=["GET"]
@@ -171,6 +242,7 @@ def index():
                                  )
 
 
+# noinspection PyUnusedLocal
 @app.errorhandler(404)
 def page_not_found(e):
     return flask.render_template("404.html"), 404
@@ -198,12 +270,16 @@ if __name__ == "__main__":
     if not UPDATE_SECONDS:
         update_seconds = "1"
     app.jinja_env.globals.update(vite_asset=get_vite_asset)
+
+    # noinspection PyTypeChecker
     update_seconds = int(UPDATE_SECONDS)
     app.config["BASIC_AUTH_PASSWORD"] = auth_password
     app.config["BASIC_AUTH_USERNAME"] = auth_username
     flask_basicauth.BasicAuth(app)
+
+    # noinspection PyUnresolvedReferences
     generate_genres(GENRES.split(","))
-    tick_duration_thread = threading.Thread(target=tick_duration,
+    tick_duration_thread = threading.Thread(target=tick_queue,
                                             daemon=True,
                                             args=(update_seconds,))
     tick_duration_thread.start()

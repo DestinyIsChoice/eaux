@@ -42,8 +42,8 @@
 <div class="list-container">
     <p id="list"></p>
 </div>
-<div class="form-dropdown-container">
-    <button type="button" class="form-dropdown-trigger">
+<div class="song-form-dropdown-container">
+    <button type="button" class="song-form-dropdown-trigger">
         submit a song
     </button>
 </div>
@@ -64,7 +64,34 @@
     </label>
     <button
             type="submit"
-            name="submit"
+            name="song-submit"
+            value="clicked"
+    >submit
+    </button>
+</form>
+<div class="album-form-dropdown-container">
+    <button type="button" class="album-form-dropdown-trigger">
+        submit an album
+    </button>
+</div>
+<form id="album-form" method="POST">
+    <label>
+        <input
+                spellcheck="false"
+                name="album-search"
+                placeholder="album"
+        >
+    </label>
+    <label>
+        <input
+                spellcheck="false"
+                name="artist-search"
+                placeholder="artist"
+        >
+    </label>
+    <button
+            type="submit"
+            name="album-submit"
             value="clicked"
     >submit
     </button>
