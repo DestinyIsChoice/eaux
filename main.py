@@ -142,13 +142,6 @@ def generic_genre(genre):
                                          limit=1).next())
                                          ["result"][0]["id"]}"),
                                     download=False)
-
-                    # noinspection PyUnresolvedReferences
-                    colors = [f"#{rgb[0]:02x}{rgb[1]:02x}{rgb[2]:02x}"
-                              for rgb in colorthief.ColorThief(io.BytesIO(
-                            urllib.request.urlopen(
-                                album.get("thumbnails")[0]["url"])
-                            .read())).get_palette(color_count=2, quality=1)]
                     for song in album["entries"]:
                         for i in range(5):
                             try:
@@ -166,19 +159,24 @@ def generic_genre(genre):
                                 break
 
                     # noinspection PyTypeChecker
-                    albums[genre].append({
-                        "album_name": album_name,
+                    albums[genre][album_name] = {
                         "artist_name": artist_name,
-                        "songs": [(song.get("title"), urls[i])
+                        "songs": [((song.get("title").lower() if song.get("title") else "unavailable"), urls[i])
                                   for i, song in enumerate(album["entries"])],
-                        "colors": colors
-                    })
+                        "colors": get_distinct_palette(io.BytesIO(
+                                urllib.request.urlopen(
+                                    album.get("thumbnails")[0]["url"]).read()))
+                    }
+                    endpoint_name = f"{genre}_{album_name}"
+                    app._got_first_request = False
                     app.add_url_rule(
                         f"/{genre}/{album_name}",
-                        view_func=generic_album,
+                        endpoint=endpoint_name,
                         defaults={"genre": genre, "album": album_name},
                         methods=["GET", "POST"]
                     )
+                    app.view_functions[endpoint_name] = generic_album
+                    app._got_first_request = True
                 except yt_dlp.utils.DownloadError:
                     pass
         return flask.render_template("genre.html",
@@ -190,9 +188,11 @@ def generic_genre(genre):
 
 def generic_album(genre, album):
     if flask.request.method == "POST":
-        return flask.render_template("genre.html",
-                                     genre=genre,
+        return flask.render_template("album.html",
                                      album=album,
+                                     genre=genre,
+                                     songs=[song_name for song_name, song_url
+                                            in albums[genre][album]["songs"]],
                                      dev_mode=IS_DEV)
     else:
         return flask.render_template("force-post.html", dev_mode=IS_DEV)
@@ -214,7 +214,7 @@ def generic_genre_queue(genre):
 
 def generate_genres(genres_list):
     for genre in genres_list:
-        albums[genre] = []
+        albums[genre] = {}
         queues[genre] = []
         app.add_url_rule(
             f"/{genre}",

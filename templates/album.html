@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <title>eaux - {{ album }}</title>
+    <title>eaux - {{ album_name }}</title>
     <style>
         :root {
             --primary-color: #ca9ee6;
@@ -26,12 +26,12 @@
 </head>
 <body>
 <div class="back-button-container">
-    <a href="/" class="back-button">
-        <i class="fa-solid fa-house home-icon"></i>
+    <a href="/{{ genre }}" class="back-button">
+        <i class="fa-solid fa-chevron-left back-icon"></i>
     </a>
 </div>
+<div id="album" data-genre="{{ album }}"></div>
 <div id="genre" data-genre="{{ genre }}"></div>
-<div id="album" data-album="{{ album }}"></div>
 <audio id="audio" autoplay controls hidden>
     <source
             id="source"
@@ -41,6 +41,11 @@
 </audio>
 <div class="list-container">
     <p id="list"></p>
+    {% for song in songs %}
+    <button type="button" class="{{ song }}">
+        {{ song }}
+    </button>
+    {% endfor %}
 </div>
 </body>
 </html>

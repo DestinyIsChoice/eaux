@@ -29,19 +29,9 @@
 }
 
 .back-button {
-    align-items: center;
     background-color: #494d64;
-    border-radius: 50%;
     box-shadow: -8px 8px 0 #232634;
-    cursor: pointer;
-    display: flex;
-    font-family: sans-serif;
-    font-weight: bold;
-    height: 32px;
-    justify-content: center;
-    text-decoration: none;
-    transition: transform 0.1s, background-color 0.2s, color 0.2s, text-shadow 0.2s;
-    width: 32px;
+    color: #ca9ee6;
 }
 
 .back-button:hover {
