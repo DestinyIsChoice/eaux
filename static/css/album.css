@@ -67,6 +67,6 @@ body {
 }
 
 .list-container button:hover {
-    color: var(--secondary-color);
+    color: var(--background-5-color);
     transition: color 0.2s ease-in
 }

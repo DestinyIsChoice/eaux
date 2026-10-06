@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <title>eaux - {{ album_name }}</title>
+    <title>eaux - {{ album }}</title>
     <style>
         :root {
             --primary-color: #ca9ee6;
@@ -31,7 +31,6 @@
     </a>
 </div>
 <div id="album" data-genre="{{ album }}"></div>
-<div id="genre" data-genre="{{ genre }}"></div>
 <audio id="audio" autoplay controls hidden>
     <source
             id="source"
@@ -42,7 +41,7 @@
 <div class="list-container">
     <p id="list"></p>
     {% for song in songs %}
-    <button type="button" class="{{ song }}">
+    <button type="button" class="song-button" data-song="{{ song }}">
         {{ song }}
     </button>
     {% endfor %}

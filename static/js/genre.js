@@ -21,15 +21,14 @@ function updateContent() {
         audio.load();
       }
       if (!audio.paused) {
-        audio.play().catch(() => {
-        });
+        audio.play().catch(() => {});
       }
-      document.documentElement.style.setProperty("--primary-color",
-        data.queue.length !== 0 ? `#${convert.hsv.hex(convert.rgb.hsv(...data.queue[0].colors[1])[0], 31.3, 90.2)}` : "#ca9ee6");
-      document.documentElement.style.setProperty("--secondary-color",
-        data.queue.length !== 0 ? `#${convert.hsv.hex(convert.rgb.hsv(...data.queue[0].colors[2])[0], 32.7, 20.4)}` : "#232634");
-      const [backgroundR, backgroundG, backgroundB] = data.queue.length !== 0 ? convert.hsv.rgb(convert.rgb.hsv(
-        ...data.queue[0].colors[0])[0], 32.7, 20.4) : [35, 38, 52];
+      const primaryHsv = convert.rgb.hsv(data.queue[0].colors[1])
+      const secondaryHsv = convert.rgb.hsv(data.queue[0].colors[2])
+      const backgroundHsv = convert.rgb.hsv(data.queue[0].colors[0])
+      document.documentElement.style.setProperty("--primary-color", `#${convert.hsv.hex(primaryHsv[0], Math.min(primaryHsv[1], 31.3), 90.2)}`);
+      document.documentElement.style.setProperty("--secondary-color", `#${convert.hsv.hex(secondaryHsv[0], Math.min(secondaryHsv[1], 32.7), 20.4)}`);
+      const [backgroundR, backgroundG, backgroundB] = convert.hsv.rgb(backgroundHsv[0], Math.min(backgroundHsv[1], 32.7), 20.4);
       document.documentElement.style.setProperty("--background-0-color", `#${convert.rgb.hex(backgroundR, backgroundG, backgroundB)}`);
       document.documentElement.style.setProperty("--background-1-color", `#${convert.rgb.hex(backgroundR * 1.171, backgroundG * 1.171, backgroundB * 1.171)}`);
       document.documentElement.style.setProperty("--background-2-color", `#${convert.rgb.hex(backgroundR * 1.371, backgroundG * 1.371, backgroundB * 1.371)}`);
@@ -61,6 +60,10 @@ function updateContent() {
     })
     .catch(() => {
     });
+}
+
+if (window.history.replaceState) {
+  window.history.replaceState(null, null, window.location.href);
 }
 
 setInterval(updateContent, 1000);
