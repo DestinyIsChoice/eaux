@@ -18,10 +18,10 @@
     <link rel="stylesheet" href="../static/css/style.css">
     <link rel="stylesheet" href="../static/css/genre.css">
     {% if dev_mode %}
-        <script type="module" src="http://localhost:5173/@vite/client"></script>
-        <script type="module" src="http://localhost:5173/static/js/genre.js"></script>
+    <script type="module" src="http://localhost:5173/@vite/client"></script>
+    <script type="module" src="http://localhost:5173/static/js/genre.js"></script>
     {% else %}
-        <script type="module" src="{{ url_for('static', filename='dist/' + vite_asset('static/js/genre.js')) }}"></script>
+    <script type="module" src="{{ url_for('static', filename='dist/' + vite_asset('static/js/genre.js')) }}"></script>
     {% endif %}
 </head>
 <body>
@@ -100,12 +100,12 @@
     <div class="carousel-track" id="carousel-track">
         {% for album in albums %}
         <a href="/{{ genre }}/{{ album }}" class="album-button">
-            {{ album }}
+            {{ album }} - {{ artists[loop.index0] }}
         </a>
         {% endfor %}
         {% for album in albums %}
         <a href="/{{ genre }}/{{ album }}" class="album-button" aria-hidden="true">
-            {{ album }}
+            {{ album }} -
         </a>
         {% endfor %}
     </div>

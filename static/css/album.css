@@ -1,5 +1,5 @@
 body {
-    background-color: var(--background-2-color);
+    background-color: var(--background-1-color);
     transition: background-color 0.2s ease-in-out;
 }
 
@@ -12,7 +12,7 @@ body {
 }
 
 .back-button {
-    background-color: var(--background-3-color);
+    background-color: var(--background-2-color);
     box-shadow: -8px 8px 0 var(--background-0-color);
     color: var(--primary-color);
 }
@@ -28,7 +28,7 @@ body {
 }
 
 .back-button:hover .back-icon {
-    color: var(--background-3-color);
+    color: var(--background-2-color);
 }
 
 .title-container {
@@ -73,14 +73,13 @@ body {
     overflow: hidden;
     text-align: center;
     text-shadow: -2px 2px 0 var(--secondary-color);
-    transition:
-            color 0.2s ease-in-out,
-            text-shadow 0.2s ease-in-out,
-            transform 0.2s ease-in-out;
+    transition: color 0.2s ease-in-out,
+    text-shadow 0.2s ease-in-out,
+    transform 0.2s ease-in-out;
 }
 
 .list-container button:hover {
-    color: var(--background-5-color);
+    color: var(--background-3-color);
 }
 
 .list-container button.active {

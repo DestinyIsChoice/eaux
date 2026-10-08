@@ -19,7 +19,8 @@ function getAlbum() {
       source.src = data.albums[album].songs[0][1];
       audio.load();
       if (!audio.paused) {
-        audio.play().catch(() => {});
+        audio.play().catch(() => {
+        });
       }
       listContainer.querySelectorAll(".song-button")[0].classList.add("active");
       const primaryHsv = convert.rgb.hsv(data.albums[album].colors[1]);
@@ -34,14 +35,10 @@ function getAlbum() {
       document.documentElement.style.setProperty("--background-0-color",
         `#${convert.rgb.hex(backgroundR, backgroundG, backgroundB)}`);
       document.documentElement.style.setProperty("--background-1-color",
-        `#${convert.rgb.hex(backgroundR * 1.171, backgroundG * 1.171, backgroundB * 1.171)}`);
-      document.documentElement.style.setProperty("--background-2-color",
         `#${convert.rgb.hex(backgroundR * 1.371, backgroundG * 1.371, backgroundB * 1.371)}`);
-      document.documentElement.style.setProperty("--background-3-color",
+      document.documentElement.style.setProperty("--background-2-color",
         `#${convert.rgb.hex(backgroundR * 1.857, backgroundG * 1.857, backgroundB * 1.857)}`);
-      document.documentElement.style.setProperty("--background-4-color",
-        `#${convert.rgb.hex(backgroundR * 2.086, backgroundG * 2.086, backgroundB * 2.086)}`);
-      document.documentElement.style.setProperty("--background-5-color",
+      document.documentElement.style.setProperty("--background-3-color",
         `#${convert.rgb.hex(backgroundR * 2.314, backgroundG * 2.314, backgroundB * 2.314)}`);
     });
 }
@@ -65,7 +62,8 @@ audio.addEventListener("ended", () => {
   source.src = newUrl;
   audio.load();
   if (!audio.paused) {
-    audio.play().catch(() => {});
+    audio.play().catch(() => {
+    });
   }
 });
 

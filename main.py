@@ -54,15 +54,16 @@ def get_distinct_palette(image_path):
 
     colors = None
     max_distance = -1
-    for combo in itertools.combinations(
+    for combination in itertools.combinations(
             colorthief.ColorThief(image_path).get_palette(
                 color_count=10, quality=1), 3):
-        combo_min_distance = min(get_distance(combo[0], combo[1]),
-                                 get_distance(combo[1], combo[2]),
-                                 get_distance(combo[0], combo[2]))
-        if combo_min_distance > max_distance:
-            max_distance = combo_min_distance
-            colors = combo
+        combination_min_distance = min(
+            get_distance(combination[0], combination[1]),
+            get_distance(combination[1], combination[2]),
+            get_distance(combination[0], combination[2]))
+        if combination_min_distance > max_distance:
+            max_distance = combination_min_distance
+            colors = combination
     return colors
 
 
@@ -157,15 +158,20 @@ def generic_genre(genre):
                             except yt_dlp.utils.YoutubeDLError:
                                 urls.append("")
                                 break
+                    thumbnails = album.get("thumbnails")
 
                     # noinspection PyTypeChecker
                     albums[genre][album_name] = {
                         "artist_name": artist_name,
-                        "songs": [((song.get("title").lower() if song.get("title") else "unavailable"), urls[i])
+                        "songs": [((song.get("title").lower()
+                                    if song.get("title") else
+                                    "unavailable"), urls[i])
                                   for i, song in enumerate(album["entries"])],
                         "colors": get_distinct_palette(io.BytesIO(
-                                urllib.request.urlopen(
-                                    album.get("thumbnails")[0]["url"]).read()))
+                            urllib.request.urlopen(
+                                thumbnails[0]["url"]).read()))
+                        if thumbnails else
+                        ([202, 158, 230], [35, 38, 52], [35, 38, 52])
                     }
                     endpoint_name = f"{genre}_{album_name}"
                     app._got_first_request = False
@@ -173,8 +179,7 @@ def generic_genre(genre):
                         f"/{genre}/{album_name}",
                         endpoint=endpoint_name,
                         defaults={"genre": genre,
-                                  "album": album_name,
-                                  "artist": artist_name},
+                                  "album": album_name},
                         methods=["GET", "POST"]
                     )
                     app.view_functions[endpoint_name] = generic_album
@@ -184,16 +189,19 @@ def generic_genre(genre):
         return flask.render_template("genre.html",
                                      genre=genre,
                                      albums=albums[genre],
+                                     artists=[data["artist_name"] for _, data
+                                              in albums[genre].items()],
                                      dev_mode=IS_DEV)
     else:
         return flask.render_template("force-post.html", dev_mode=IS_DEV)
 
 
-def generic_album(genre, album, artist):
+def generic_album(genre, album):
     if flask.request.method == "POST":
         return flask.render_template("album.html",
                                      album=album,
-                                     artist=artist,
+                                     artist=albums[genre]
+                                     [album]["artist_name"],
                                      genre=genre,
                                      songs=[song_name for song_name, song_url
                                             in albums[genre][album]["songs"]],
@@ -253,6 +261,7 @@ def get_vite_asset(entry_name):
 def index():
     return flask.render_template("index.html",
                                  genres=queues)
+
 
 # noinspection PyUnusedLocal
 @app.errorhandler(404)

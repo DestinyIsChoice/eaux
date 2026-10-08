@@ -21,7 +21,8 @@ function updateContent() {
         audio.load();
       }
       if (!audio.paused) {
-        audio.play().catch(() => {});
+        audio.play().catch(() => {
+        });
       }
       const primaryHsv = data.queue.length !== 0 ? convert.rgb.hsv(data.queue[0].colors[1]) : [276.7, 31.3, 90.2];
       const secondaryHsv = data.queue.length !== 0 ? convert.rgb.hsv(data.queue[0].colors[2]) : [229.4, 32.7, 20.4];
@@ -128,6 +129,7 @@ document.addEventListener("DOMContentLoaded", () => {
   if (slides.length === 0) return;
   const gap = 16;
   const uniqueSlideCount = slides.length / 2;
+
   function setupCarouselSizing() {
     track.style.animation = "none";
     track.style.transform = "translateX(0)";
@@ -172,6 +174,7 @@ document.addEventListener("DOMContentLoaded", () => {
       track.style.animation = `dynamicScroll ${dynamicDuration}s linear infinite`;
     }
   }
+
   setupCarouselSizing();
   window.addEventListener("resize", setupCarouselSizing);
 });
