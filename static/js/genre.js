@@ -124,7 +124,7 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   });
   const track = document.getElementById("carousel-track");
-  const slides = Array.from(track.querySelectorAll('.album-button'));
+  const slides = Array.from(track.querySelectorAll(".album-button"));
   if (slides.length === 0) return;
   const gap = 16;
   const uniqueSlideCount = slides.length / 2;
