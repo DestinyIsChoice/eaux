@@ -192,8 +192,8 @@ def generic_genre(genre):
 def generic_album(genre, album, artist):
     if flask.request.method == "POST":
         return flask.render_template("album.html",
-                                     album=album.lower(),
-                                     artist=artist.lower(),
+                                     album=album,
+                                     artist=artist,
                                      genre=genre,
                                      songs=[song_name for song_name, song_url
                                             in albums[genre][album]["songs"]],
