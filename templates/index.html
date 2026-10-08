@@ -6,11 +6,15 @@
     <link rel="stylesheet" href="../static/css/index.css">
 </head>
 <body>
-<div class="eaux-container">
-    <p id="eaux">eaux</p>
+<div class="title-container">
+    <p id="title">eaux</p>
 </div>
 <div class="genres">
-    {{ genres_list | safe }}
+    {% for genre in genres %}
+    <a href="/{{ genre }}" class="genre-button">
+        {{ genre }}
+    </a>
+    {% endfor %}
 </div>
 <div class="policy-container">
     <span class="policy-icon">i</span>

@@ -17,7 +17,7 @@
     overflow: hidden;
     text-align: center;
     text-shadow: -2px 2px 0 #232634;
-    transition: color 0.2s ease;
+    transition: color 0.2s ease-in-out;
 }
 
 .back-button-container {

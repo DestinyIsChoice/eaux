@@ -1,9 +1,18 @@
 * {
     box-sizing: border-box;
-    font-family: "Times New Roman", Times, serif;
+    font-family: MingLiU, PMingLiU, "细明体", "PMingLiU", serif;
     font-style: italic;
     margin: 0;
     padding: 0;
+}
+
+html::-webkit-scrollbar {
+    display: none;
+}
+
+html {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
 }
 
 body {
@@ -27,6 +36,10 @@ body {
     height: 32px;
     justify-content: center;
     text-decoration: none;
-    transition: transform 0.1s, background-color 0.2s, color 0.2s, text-shadow 0.2s;
+    transition:
+            background-color 0.2s ease-in-out,
+            color 0.2s ease-in-out,
+            text-shadow 0.2s ease-in-out,
+            transform 0.1s ease-in-out;
     width: 32px;
 }

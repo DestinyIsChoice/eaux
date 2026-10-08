@@ -96,5 +96,19 @@
     >submit
     </button>
 </form>
+<div class="carousel-container" id="carousel-container">
+    <div class="carousel-track" id="carousel-track">
+        {% for album in albums %}
+        <a href="/{{ genre }}/{{ album }}" class="album-button">
+            {{ album }}
+        </a>
+        {% endfor %}
+        {% for album in albums %}
+        <a href="/{{ genre }}/{{ album }}" class="album-button" aria-hidden="true">
+            {{ album }}
+        </a>
+        {% endfor %}
+    </div>
+</div>
 </body>
 </html>

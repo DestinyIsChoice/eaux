@@ -1,4 +1,4 @@
-.eaux-container {
+.title-container {
     display: grid;
     grid-template-rows: 1fr;
     margin-bottom: 30px;
@@ -6,7 +6,7 @@
     transition: grid-template-rows 0.3s ease-in-out;
 }
 
-#eaux {
+#title {
     font-size: 2rem;
     font-weight: 900;
     line-height: 1.5;
@@ -37,7 +37,11 @@
     padding: 14px 32px;
     text-decoration: none;
     text-shadow: -2px 2px 0 #232634;
-    transition: transform 0.1s, background-color 0.2s, color 0.2s, text-shadow 0.2s;
+    transition:
+            background-color 0.2s ease-in-out,
+            color 0.2s ease-in-out,
+            text-shadow 0.2s ease-in-out,
+            transform 0.1s ease-in-out;
     white-space: nowrap;
 }
 
@@ -71,7 +75,11 @@
     font-weight: bold;
     height: 32px;
     justify-content: center;
-    transition: transform 0.1s, background-color 0.2s, color 0.2s, text-shadow 0.2s;
+    transition:
+            background-color 0.2s ease-in-out,
+            color 0.2s ease-in-out,
+            text-shadow 0.2s ease-in-out,
+            transform 0.1s ease-in-out;
     width: 32px;
 }
 
@@ -92,7 +100,10 @@
     position: absolute;
     right: 0;
     transform: translateY(10px);
-    transition: opacity 0.3s ease, transform 0.3s ease, visibility 0.3s;
+    transition:
+            opacity 0.3s ease-in-out,
+            transform 0.3s ease-in-out,
+            visibility 0.3s ease-in-out;
     visibility: hidden;
     width: 220px;
 }

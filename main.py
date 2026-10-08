@@ -172,7 +172,9 @@ def generic_genre(genre):
                     app.add_url_rule(
                         f"/{genre}/{album_name}",
                         endpoint=endpoint_name,
-                        defaults={"genre": genre, "album": album_name},
+                        defaults={"genre": genre,
+                                  "album": album_name,
+                                  "artist": artist_name},
                         methods=["GET", "POST"]
                     )
                     app.view_functions[endpoint_name] = generic_album
@@ -181,15 +183,17 @@ def generic_genre(genre):
                     pass
         return flask.render_template("genre.html",
                                      genre=genre,
+                                     albums=albums[genre],
                                      dev_mode=IS_DEV)
     else:
         return flask.render_template("force-post.html", dev_mode=IS_DEV)
 
 
-def generic_album(genre, album):
+def generic_album(genre, album, artist):
     if flask.request.method == "POST":
         return flask.render_template("album.html",
                                      album=album,
+                                     artist=artist,
                                      genre=genre,
                                      songs=[song_name for song_name, song_url
                                             in albums[genre][album]["songs"]],
@@ -248,18 +252,7 @@ def get_vite_asset(entry_name):
 @app.route("/")
 def index():
     return flask.render_template("index.html",
-                                 genres_list="".join([
-                                     f"""
-                                     <a
-                                         href="/{genre}"
-                                         class="genre-button"
-                                     >
-                                         {genre}
-                                     </a>
-                                     """
-                                     for genre in queues])
-                                 )
-
+                                 genres=queues)
 
 # noinspection PyUnusedLocal
 @app.errorhandler(404)

@@ -23,18 +23,27 @@ function updateContent() {
       if (!audio.paused) {
         audio.play().catch(() => {});
       }
-      const primaryHsv = convert.rgb.hsv(data.queue[0].colors[1])
-      const secondaryHsv = convert.rgb.hsv(data.queue[0].colors[2])
-      const backgroundHsv = convert.rgb.hsv(data.queue[0].colors[0])
-      document.documentElement.style.setProperty("--primary-color", `#${convert.hsv.hex(primaryHsv[0], Math.min(primaryHsv[1], 31.3), 90.2)}`);
-      document.documentElement.style.setProperty("--secondary-color", `#${convert.hsv.hex(secondaryHsv[0], Math.min(secondaryHsv[1], 32.7), 20.4)}`);
-      const [backgroundR, backgroundG, backgroundB] = convert.hsv.rgb(backgroundHsv[0], Math.min(backgroundHsv[1], 32.7), 20.4);
-      document.documentElement.style.setProperty("--background-0-color", `#${convert.rgb.hex(backgroundR, backgroundG, backgroundB)}`);
-      document.documentElement.style.setProperty("--background-1-color", `#${convert.rgb.hex(backgroundR * 1.171, backgroundG * 1.171, backgroundB * 1.171)}`);
-      document.documentElement.style.setProperty("--background-2-color", `#${convert.rgb.hex(backgroundR * 1.371, backgroundG * 1.371, backgroundB * 1.371)}`);
-      document.documentElement.style.setProperty("--background-3-color", `#${convert.rgb.hex(backgroundR * 1.857, backgroundG * 1.857, backgroundB * 1.857)}`);
-      document.documentElement.style.setProperty("--background-4-color", `#${convert.rgb.hex(backgroundR * 2.086, backgroundG * 2.086, backgroundB * 2.086)}`);
-      document.documentElement.style.setProperty("--background-5-color", `#${convert.rgb.hex(backgroundR * 2.314, backgroundG * 2.314, backgroundB * 2.314)}`);
+      const primaryHsv = data.queue.length !== 0 ? convert.rgb.hsv(data.queue[0].colors[1]) : [276.7, 31.3, 90.2];
+      const secondaryHsv = data.queue.length !== 0 ? convert.rgb.hsv(data.queue[0].colors[2]) : [229.4, 32.7, 20.4];
+      const backgroundHsv = data.queue.length !== 0 ? convert.rgb.hsv(data.queue[0].colors[0]) : [229.4, 32.7, 20.4];
+      const [backgroundR, backgroundG, backgroundB] = convert.hsv.rgb(
+        backgroundHsv[0], Math.min(backgroundHsv[1], 32.7), 20.4);
+      document.documentElement.style.setProperty("--primary-color",
+        `#${convert.hsv.hex(primaryHsv[0], Math.min(primaryHsv[1], 31.3), 90.2)}`);
+      document.documentElement.style.setProperty("--secondary-color",
+        `#${convert.hsv.hex(secondaryHsv[0], Math.min(secondaryHsv[1], 32.7), 20.4)}`);
+      document.documentElement.style.setProperty("--background-0-color",
+        `#${convert.rgb.hex(backgroundR, backgroundG, backgroundB)}`);
+      document.documentElement.style.setProperty("--background-1-color",
+        `#${convert.rgb.hex(backgroundR * 1.171, backgroundG * 1.171, backgroundB * 1.171)}`);
+      document.documentElement.style.setProperty("--background-2-color",
+        `#${convert.rgb.hex(backgroundR * 1.371, backgroundG * 1.371, backgroundB * 1.371)}`);
+      document.documentElement.style.setProperty("--background-3-color",
+        `#${convert.rgb.hex(backgroundR * 1.857, backgroundG * 1.857, backgroundB * 1.857)}`);
+      document.documentElement.style.setProperty("--background-4-color",
+        `#${convert.rgb.hex(backgroundR * 2.086, backgroundG * 2.086, backgroundB * 2.086)}`);
+      document.documentElement.style.setProperty("--background-5-color",
+        `#${convert.rgb.hex(backgroundR * 2.314, backgroundG * 2.314, backgroundB * 2.314)}`);
       const newHTML = data.queue
         .map(
           (song) =>
@@ -114,4 +123,55 @@ document.addEventListener("DOMContentLoaded", () => {
       body: new FormData(albumForm)
     });
   });
+  const track = document.getElementById("carousel-track");
+  const slides = Array.from(track.querySelectorAll('.album-button'));
+  if (slides.length === 0) return;
+  const gap = 16;
+  const uniqueSlideCount = slides.length / 2;
+  function setupCarouselSizing() {
+    track.style.animation = "none";
+    track.style.transform = "translateX(0)";
+    slides.forEach((slide) => {
+      slide.style.display = "block";
+      slide.style.marginRight = `${gap}px`;
+      slide.style.width = "auto";
+    });
+    let totalOriginalsWidth = 0;
+    for (let i = 0; i < uniqueSlideCount; i++) {
+      totalOriginalsWidth += slides[i].getBoundingClientRect().width + gap;
+    }
+    if (totalOriginalsWidth + 40
+      <= document.getElementById("carousel-container").getBoundingClientRect().width) {
+      track.style.width = "100%";
+      track.style.justifyContent = "center";
+      slides.forEach((slide, index) => {
+        if (index >= uniqueSlideCount) {
+          slide.style.display = "none";
+        } else if (index === uniqueSlideCount - 1) {
+          slide.style.marginRight = "0";
+        }
+      });
+    } else {
+      track.style.width = "max-content";
+      track.style.justifyContent = "flex-start";
+      const styleId = "dynamic-carousel-keyframes";
+      let styleElement = document.getElementById(styleId);
+      if (!styleElement) {
+        styleElement = document.createElement("style");
+        styleElement.id = styleId;
+        document.head.appendChild(styleElement);
+      }
+      const translationDistance = totalOriginalsWidth;
+      styleElement.innerHTML = `
+          @keyframes dynamicScroll {
+              0% { transform: translateX(0); }
+              100% { transform: translateX(-${translationDistance}px); }
+          }
+      `;
+      const dynamicDuration = translationDistance / 100;
+      track.style.animation = `dynamicScroll ${dynamicDuration}s linear infinite`;
+    }
+  }
+  setupCarouselSizing();
+  window.addEventListener("resize", setupCarouselSizing);
 });

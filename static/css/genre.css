@@ -1,6 +1,6 @@
 body {
     background-color: var(--background-2-color);
-    transition: background-color 0.2s ease-in;
+    transition: background-color 0.2s ease-in-out;
 }
 
 .back-button-container {
@@ -12,7 +12,7 @@ body {
 }
 
 .back-button {
-    background-color: var(--background-4-color);
+    background-color: var(--background-3-color);
     box-shadow: -8px 8px 0 var(--background-0-color);
     color: var(--primary-color);
 }
@@ -28,7 +28,7 @@ body {
 }
 
 .back-button:hover .home-icon {
-    color: var(--background-4-color);
+    color: var(--background-3-color);
 }
 
 #genre {
@@ -56,7 +56,10 @@ body {
     overflow: hidden;
     text-align: center;
     text-shadow: -2px 2px 0 var(--secondary-color);
-    transition: color 0.2s ease-in, height 0.35s ease-in-out, text-shadow 0.2s ease-in;
+    transition:
+            color 0.2s ease-in-out,
+            height 0.35s ease-in-out,
+            text-shadow 0.2s ease-in-out;
 }
 
 #list.expanded {
@@ -73,7 +76,7 @@ body {
 
 .album-form-dropdown-trigger,
 .song-form-dropdown-trigger {
-    background-color: var(--background-4-color);
+    background-color: var(--background-3-color);
     border: none;
     border-radius: 6px;
     box-shadow: -8px 8px 0 var(--background-0-color);
@@ -85,17 +88,24 @@ body {
     margin: 0 auto;
     padding: 14px;
     text-shadow: -2px 2px 0 var(--secondary-color);
-    transition: background-color 0.2s ease-in, color 0.2s ease-in, text-shadow 0.2s ease-in, transform 0.1s;
+    transition:
+            background-color 0.2s ease-in-out,
+            color 0.2s ease-in-out,
+            text-shadow 0.2s ease-in-out,
+            transform 0.1s ease-in-out;
     width: 80%;
 }
 
 .album-form-dropdown-trigger:hover,
 .song-form-dropdown-trigger:hover {
     background-color: var(--primary-color);
-    color: var(--background-4-color);
+    color: var(--background-3-color);
     text-shadow: 0 0 0 var(--secondary-color);
     transform: scale(1.02);
-    transition: background-color 0.2s ease-in, color 0.2s ease-in, text-shadow 0.2s ease-in;
+    transition:
+            background-color 0.2s ease-in-out,
+            color 0.2s ease-in-out,
+            text-shadow 0.2s ease-in-out;
 }
 
 .album-form-dropdown-trigger:active,
@@ -115,7 +125,12 @@ body {
     overflow: hidden;
     padding: 0 24px;
     margin: 0 auto;
-    transition: margin-top 0.3s ease-out, margin-bottom 0.3s ease-out, max-height 0.3s ease-out, padding 0.3s ease-out, visibility 0.3s ease-out;
+    transition:
+            margin-top 0.3s ease-in-out,
+            margin-bottom 0.3s ease-in-out,
+            max-height 0.3s ease-in-out,
+            padding 0.3s ease-in-out,
+            visibility 0.3s ease-in-out;
     visibility: hidden;
     width: 100%;
 }
@@ -142,7 +157,11 @@ input[name="artist-search"] {
     text-indent: 4px;
     text-shadow: -2px 2px 0 var(--secondary-color);
     text-transform: lowercase;
-    transition: background-color 0.2s, border-color 0.2s, color 0.2s ease-in, text-shadow 0.2s ease-in;
+    transition:
+            background-color 0.2s ease-in-out,
+            border-color 0.2s ease-in-out,
+            color 0.2s ease-in-out,
+            text-shadow 0.2s ease-in-out;
     width: 100%;
 }
 
@@ -169,7 +188,11 @@ button[name="album-submit"] {
     font-weight: 700;
     padding: 14px;
     text-shadow: -2px 2px 0 var(--secondary-color);
-    transition: background-color 0.2s, color 0.2s ease-in, text-shadow 0.2s ease-in, transform 0.1s;
+    transition:
+            background-color 0.2s ease-in-out,
+            color 0.2s ease-in-out,
+            text-shadow 0.2s ease-in-out,
+            transform 0.1s ease-in-out;
     width: 100%;
 }
 
@@ -179,10 +202,66 @@ button[name="album-submit"]:hover {
     color: var(--background-4-color);
     text-shadow: 0 0 0 var(--secondary-color);
     transform: scale(1.02);
-    transition: background-color 0.2s ease-in, color 0.2s ease-in, text-shadow 0.2s ease-in;
 }
 
 button[name="song-submit"]:active, 
 button[name="album-submit"]:active {
+    transform: scale(0.98);
+}
+
+.carousel-container {
+    background: var(--background-3-color);
+    border-radius: 12px;
+    bottom: 24px;
+    box-shadow: -8px 8px 0 var(--background-0-color);
+    height: 86px;
+    left: 50%;
+    max-width: 1200px;
+    overflow: hidden;
+    padding: 20px 0;
+    position: fixed;
+    transform: translateX(-50%);
+    width: 90%;
+    z-index: 9999;
+}
+
+.carousel-track {
+    display: flex;
+    width: max-content;
+}
+
+.carousel-container:hover .carousel-track {
+    animation-play-state: paused !important;
+}
+
+.album-button {
+    background-color: var(--background-4-color);
+    border-radius: 6px;
+    box-sizing: border-box;
+    color: var(--primary-color);
+    cursor: pointer;
+    flex-shrink: 0;
+    font-size: 1rem;
+    font-weight: 700;
+    padding: 14px 32px;
+    text-decoration: none;
+    text-shadow: -2px 2px 0 var(--secondary-color);
+    white-space: nowrap;
+    width: auto;
+    transition:
+            background-color 0.2s ease-in-out,
+            color 0.2s ease-in-out,
+            text-shadow 0.2s ease-in-out,
+            transform 0.1s ease-in-out;
+}
+
+.album-button:hover {
+    background-color: var(--primary-color);
+    color: #494d64;
+    text-shadow: 0 0 0 var(--primary-color);
+    transform: scale(1.02);
+}
+
+.album-button:active {
     transform: scale(0.98);
 }

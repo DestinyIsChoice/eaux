@@ -1,6 +1,6 @@
 body {
     background-color: var(--background-2-color);
-    transition: background-color 0.2s ease-in;
+    transition: background-color 0.2s ease-in-out;
 }
 
 .back-button-container {
@@ -12,7 +12,7 @@ body {
 }
 
 .back-button {
-    background-color: var(--background-4-color);
+    background-color: var(--background-3-color);
     box-shadow: -8px 8px 0 var(--background-0-color);
     color: var(--primary-color);
 }
@@ -28,18 +28,27 @@ body {
 }
 
 .back-button:hover .back-icon {
-    color: var(--background-4-color);
+    color: var(--background-3-color);
 }
 
-#album {
-    background-clip: padding-box;
-    font-size: 2.5rem;
-    font-weight: 700;
-    letter-spacing: -0.05em;
-    margin-bottom: 10px;
-    text-transform: capitalize;
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
+.title-container {
+    display: grid;
+    grid-template-rows: 1fr;
+    margin-bottom: 30px;
+    max-width: 400px;
+    transition: grid-template-rows 0.3s ease-in-out;
+}
+
+#title {
+    color: var(--primary-color);
+    font-size: 2rem;
+    font-weight: 900;
+    line-height: 1.5;
+    min-height: 0;
+    overflow: hidden;
+    text-align: center;
+    text-shadow: -2px 2px 0 var(--secondary-color);
+    transition: color 0.2s ease;
 }
 
 .list-container {
@@ -63,10 +72,16 @@ body {
     overflow: hidden;
     text-align: center;
     text-shadow: -2px 2px 0 var(--secondary-color);
-    transition: color 0.2s ease-in, text-shadow 0.2s ease-in;
+    transition:
+            color 0.2s ease-in-out,
+            text-shadow 0.2s ease-in-out,
+            transform 0.2s ease-in-out;
 }
 
 .list-container button:hover {
     color: var(--background-5-color);
-    transition: color 0.2s ease-in
+}
+
+.list-container button.active {
+    transform: scale(1.1);
 }
