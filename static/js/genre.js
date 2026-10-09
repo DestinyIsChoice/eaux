@@ -4,79 +4,7 @@ const audio = document.getElementById("audio");
 const genre = document.getElementById("genre").dataset.genre;
 const list = document.getElementById("list");
 const source = document.getElementById("source");
-
-function updateContent() {
-  fetch(`${genre}/queue`)
-    .then((response) => response.json())
-    .then((data) => {
-      const newUrl = data.queue.length !== 0
-        ? `${data.queue[0].url}#t=${data.queue[0].timestamp}`
-        : "";
-      const oldUrl = source.src;
-      source.src = newUrl;
-      if (
-        newUrl.slice(0, newUrl.indexOf("#")) !==
-        oldUrl.slice(0, oldUrl.indexOf("#"))
-      ) {
-        audio.load();
-      }
-      if (!audio.paused) {
-        audio.play().catch(() => {
-        });
-      }
-      const primaryHsv = data.queue.length !== 0 ? convert.rgb.hsv(data.queue[0].colors[1]) : [276.7, 31.3, 90.2];
-      const secondaryHsv = data.queue.length !== 0 ? convert.rgb.hsv(data.queue[0].colors[2]) : [229.4, 32.7, 20.4];
-      const backgroundHsv = data.queue.length !== 0 ? convert.rgb.hsv(data.queue[0].colors[0]) : [229.4, 32.7, 20.4];
-      const [backgroundR, backgroundG, backgroundB] = convert.hsv.rgb(
-        backgroundHsv[0], Math.min(backgroundHsv[1], 32.7), 20.4);
-      document.documentElement.style.setProperty("--primary-color",
-        `#${convert.hsv.hex(primaryHsv[0], Math.min(primaryHsv[1], 31.3), 90.2)}`);
-      document.documentElement.style.setProperty("--secondary-color",
-        `#${convert.hsv.hex(secondaryHsv[0], Math.min(secondaryHsv[1], 32.7), 20.4)}`);
-      document.documentElement.style.setProperty("--background-0-color",
-        `#${convert.rgb.hex(backgroundR, backgroundG, backgroundB)}`);
-      document.documentElement.style.setProperty("--background-1-color",
-        `#${convert.rgb.hex(backgroundR * 1.171, backgroundG * 1.171, backgroundB * 1.171)}`);
-      document.documentElement.style.setProperty("--background-2-color",
-        `#${convert.rgb.hex(backgroundR * 1.371, backgroundG * 1.371, backgroundB * 1.371)}`);
-      document.documentElement.style.setProperty("--background-3-color",
-        `#${convert.rgb.hex(backgroundR * 1.857, backgroundG * 1.857, backgroundB * 1.857)}`);
-      document.documentElement.style.setProperty("--background-4-color",
-        `#${convert.rgb.hex(backgroundR * 2.086, backgroundG * 2.086, backgroundB * 2.086)}`);
-      document.documentElement.style.setProperty("--background-5-color",
-        `#${convert.rgb.hex(backgroundR * 2.314, backgroundG * 2.314, backgroundB * 2.314)}`);
-      const newHTML = data.queue
-        .map(
-          (song) =>
-            `${song.song_name.toLowerCase()}
-                        - ${song.artist_name.toLowerCase()}
-                        <br>`,
-        )
-        .join("");
-      if (newHTML !== list.innerHTML) {
-        list.style.height = `${list.offsetHeight}px`;
-        const clone = list.cloneNode(false);
-        clone.style.visibility = "hidden";
-        clone.style.position = "absolute";
-        clone.style.height = "auto";
-        clone.innerHTML = newHTML;
-        list.parentNode.appendChild(clone);
-        const targetHeight = clone.scrollHeight;
-        clone.remove();
-        list.innerHTML = newHTML;
-        void list.offsetHeight;
-        list.style.height = `${targetHeight}px`;
-      }
-    })
-    .catch(() => {
-    });
-}
-
-if (window.history.replaceState) {
-  window.history.replaceState(null, null, window.location.href);
-}
-
-setInterval(updateContent, 1000);
+let fadeInInterval = null;
 
 document.addEventListener("DOMContentLoaded", () => {
   const songTrigger = document.querySelector(".song-form-dropdown-trigger");
@@ -178,3 +106,92 @@ document.addEventListener("DOMContentLoaded", () => {
   setupCarouselSizing();
   window.addEventListener("resize", setupCarouselSizing);
 });
+
+audio.addEventListener("play", () => {
+  clearInterval(fadeInInterval);
+  audio.volume = 0;
+  const intervalTime = 50;
+  const volumeIncrement = intervalTime / 1000;
+  fadeInInterval = setInterval(() => {
+    if (audio.volume < 1 - volumeIncrement) {
+      audio.volume += volumeIncrement;
+    } else {
+      audio.volume = 1;
+      clearInterval(fadeInInterval);
+    }
+  }, intervalTime);
+});
+
+function updateContent() {
+  fetch(`${genre}/queue`)
+    .then((response) => response.json())
+    .then((data) => {
+      const newUrl = data.queue.length !== 0
+        ? `${data.queue[0].url}#t=${data.queue[0].timestamp}`
+        : "";
+      const oldUrl = source.src;
+      source.src = newUrl;
+      if (
+        newUrl.slice(0, newUrl.indexOf("#")) !==
+        oldUrl.slice(0, oldUrl.indexOf("#"))
+      ) {
+        audio.load();
+      }
+      if (!audio.paused) {
+        audio.play().catch(() => {
+        });
+      }
+      const primaryHsv = data.queue.length !== 0 ? convert.rgb.hsv(data.queue[0].colors[1]) : [276.67, 31.3, 90.2];
+      const secondaryHsv = data.queue.length !== 0 ? convert.rgb.hsv(data.queue[0].colors[2]) : [229.41, 32.69, 20.39];
+      const backgroundHsv = data.queue.length !== 0 ? convert.rgb.hsv(data.queue[0].colors[0]) : [229.41, 32.69, 20.39];
+      const [backgroundR, backgroundG, backgroundB] = convert.hsv.rgb(
+        backgroundHsv[0], Math.min(backgroundHsv[1], 32.69), 20.39);
+      document.documentElement.style.setProperty("--primary-color",
+        `#${convert.hsv.hex(primaryHsv[0], Math.min(primaryHsv[1], 31.3), 90.2)}`);
+      document.documentElement.style.setProperty("--secondary-color",
+        `#${convert.hsv.hex(secondaryHsv[0], Math.min(secondaryHsv[1], 32.69), 20.39)}`);
+      document.documentElement.style.setProperty("--background-0-color",
+        `#${convert.rgb.hex(backgroundR, backgroundG, backgroundB)}`);
+      document.documentElement.style.setProperty("--background-1-color",
+        `#${convert.rgb.hex(backgroundR * 1.171, backgroundG * 1.171, backgroundB * 1.171)}`);
+      document.documentElement.style.setProperty("--background-2-color",
+        `#${convert.rgb.hex(backgroundR * 1.371, backgroundG * 1.371, backgroundB * 1.371)}`);
+      document.documentElement.style.setProperty("--background-3-color",
+        `#${convert.rgb.hex(backgroundR * 1.857, backgroundG * 1.857, backgroundB * 1.857)}`);
+      document.documentElement.style.setProperty("--background-4-color",
+        `#${convert.rgb.hex(backgroundR * 2.086, backgroundG * 2.086, backgroundB * 2.086)}`);
+      document.documentElement.style.setProperty("--background-5-color",
+        `#${convert.rgb.hex(backgroundR * 2.314, backgroundG * 2.314, backgroundB * 2.314)}`);
+      const newHTML = data.queue
+        .map(
+          (song) =>
+            `${song.song_name.toLowerCase()}
+                        - ${song.artist_name.toLowerCase()}
+                        <br>`,
+        )
+        .join("");
+      if (newHTML === list.innerHTML) {
+        return;
+      }
+      list.style.height = `${list.offsetHeight}px`;
+      const clone = list.cloneNode(false);
+      clone.style.visibility = "hidden";
+      clone.style.position = "absolute";
+      clone.style.height = "auto";
+      clone.innerHTML = newHTML;
+      list.parentNode.appendChild(clone);
+      const targetHeight = clone.scrollHeight;
+      clone.remove();
+      list.innerHTML = newHTML;
+      void list.offsetHeight;
+      list.style.height = `${targetHeight}px`;
+    })
+    .catch(() => {
+    });
+}
+
+if (window.history.replaceState) {
+  window.history.replaceState(null, null, window.location.href);
+}
+
+setInterval(updateContent, 1000);

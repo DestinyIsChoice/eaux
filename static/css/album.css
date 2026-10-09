@@ -45,8 +45,12 @@ body {
     font-size: 2rem;
     font-weight: 900;
     line-height: 1.5;
+    margin-left: -0.15em;
+    margin-right: -0.15em;
     min-height: 0;
     overflow: hidden;
+    padding-left: 0.15em;
+    padding-right: 0.15em;
     text-align: center;
     text-shadow: -2px 2px 0 var(--secondary-color);
     transition: color 0.2s ease;

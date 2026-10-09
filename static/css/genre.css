@@ -217,6 +217,9 @@ button[name="album-submit"]:active {
     transform: translateX(-50%);
     width: 90%;
     z-index: 9999;
+    transition: background 0.2s,
+    box-shadow 0.2s ease-in-out;
+
 }
 
 .carousel-track {

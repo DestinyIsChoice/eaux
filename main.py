@@ -128,6 +128,8 @@ def generic_genre(genre):
                 try:
                     album_name = flask.request.form["album-search"]
                     artist_name = flask.request.form["artist-search"]
+
+                    # noinspection PyUnusedLocal
                     urls = []
 
                     # noinspection PyTypeChecker
@@ -143,6 +145,32 @@ def generic_genre(genre):
                                          limit=1).next())
                                          ["result"][0]["id"]}"),
                                     download=False)
+
+                    async def extract_song_url(album_song):
+                        song_url = album_song.get("url")
+                        if not song_url:
+                            return ""
+                        for _ in range(5):
+                            try:
+                                return ((await asyncio.to_thread(
+                                    lambda: yt_dlp.YoutubeDL(
+                                        {"format": "bestaudio/best",
+                                         "quiet": True}).extract_info(
+                                        song_url, download=False)))
+                                        .get("url", ""))
+                            except yt_dlp.utils.YoutubeDLError:
+                                continue
+                        return ""
+
+                    async def main_runner():
+                        tasks = [extract_song_url(album_song)
+                                 for album_song in album["entries"]]
+                        return await asyncio.gather(*tasks)
+                    loop = asyncio.new_event_loop()
+                    try:
+                        urls = loop.run_until_complete(main_runner())
+                    finally:
+                        loop.close()
                     for song in album["entries"]:
                         for i in range(5):
                             try:
