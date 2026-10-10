@@ -67,24 +67,31 @@ def get_distinct_palette(image_path):
     return colors
 
 
+def search_song(song, artist, result_index):
+    song_search = pytubefix.Search(
+        f"""
+        {song} by {artist} "Provided to YouTube"
+        """)
+    if not song_search.results:
+        song_search = pytubefix.Search(
+            f"{song} by {artist}")
+    if song_search.results[result_index]:
+        return song_search.results[result_index]
+    else:
+        return song_search.results[0]
+
+
 def generic_genre(genre):
     if flask.request.method == "POST":
         if flask.request.form.get("initial-load") != "true":
             if "song-search" in flask.request.form:
                 for i in range(5):
                     try:
-                        song_name = flask.request.form["song-search"]
                         artist_name = flask.request.form["artist-search"]
-                        song_search = pytubefix.Search(
-                            f"""
-                            {song_name} by {artist_name} "Provided to YouTube"
-                            """)
-                        if not song_search.results:
-                            song_search = pytubefix.Search(
-                                f"{song_name} by {artist_name}")
-                        song = song_search.results[0]
+                        song_name = flask.request.form["song-search"]
+                        song = search_song(song_name, artist_name, 0)
 
-                        # noinspection PyTypeChecker
+                        # noinspection PyTypeChecker, PyUnresolvedReferences
                         url = (yt_dlp.YoutubeDL({
                             "format": "bestaudio/best",
                             "quiet": True}
@@ -109,6 +116,8 @@ def generic_genre(genre):
                                 break
                             except KeyError:
                                 pass
+
+                        # noinspection PyUnresolvedReferences
                         queues[genre].append({
                             "song_name": song_name,
                             "artist_name": artist_name,
@@ -148,20 +157,41 @@ def generic_genre(genre):
 
                     async def extract_song_info(album_song):
                         song_url = album_song.get("url")
+                        streaming_url = ""
                         if not song_url:
-                            return ""
-                        for _ in range(5):
-                            try:
-                                # noinspection PyTypeChecker
-                                return ((await asyncio.to_thread(
-                                    lambda: yt_dlp.YoutubeDL(
-                                        {"format": "bestaudio/best",
-                                         "quiet": True}).extract_info(
-                                        song_url, download=False)))
-                                        .get("url", ""), song_url)
-                            except yt_dlp.utils.YoutubeDLError:
-                                continue
-                        return "", song_url
+                            return "", ""
+                        try:
+
+                            # noinspection PyTypeChecker
+                            streaming_url = (await asyncio.to_thread(
+                                lambda: yt_dlp.YoutubeDL(
+                                    {"format": "bestaudio/best",
+                                     "quiet": True}).extract_info(
+                                    song_url, download=False))).get("url", "")
+                        except yt_dlp.utils.YoutubeDLError:
+                            if not album_song.get("title"):
+                                return "", song_url
+                            for search_index in range(5):
+                                try:
+
+                                    # noinspection PyUnresolvedReferences
+                                    song_url = search_song(
+                                        album_song.get("title"),
+                                        artist_name,
+                                        search_index).watch_url
+
+                                    # noinspection PyTypeChecker
+                                    streaming_url = ((await asyncio.to_thread(
+                                        lambda: yt_dlp.YoutubeDL(
+                                            {"format": "bestaudio/best",
+                                             "quiet": True}).extract_info(
+                                            song_url, download=False)))
+                                                     .get("url", ""))
+                                    break
+                                except yt_dlp.utils.YoutubeDLError:
+                                    if search_index == 4:
+                                        streaming_url = ""
+                        return streaming_url, song_url
 
                     async def gather_song_info():
                         return await asyncio.gather(
@@ -200,7 +230,8 @@ def generic_genre(genre):
                         methods=["GET", "POST"]
                     )
                     app.view_functions[album_endpoint_name] = generic_album
-                    regenerate_endpoint_name = f"{genre}_{album_name}_regenerate"
+                    regenerate_endpoint_name = (f"{genre}_{album_name}"
+                                                f"_regenerate")
                     app.add_url_rule(
                         f"/{genre}/{album_name}/regenerate",
                         endpoint=regenerate_endpoint_name,
@@ -208,7 +239,8 @@ def generic_genre(genre):
                                   "album": album_name},
                         methods=["POST"]
                     )
-                    app.view_functions[regenerate_endpoint_name] = generic_album_regenerate
+                    app.view_functions[
+                        regenerate_endpoint_name] = generic_album_regenerate
                     app._got_first_request = True
                 except yt_dlp.utils.DownloadError:
                     pass
@@ -239,8 +271,6 @@ def generic_album(genre, album):
 
 def generic_album_regenerate(genre, album):
 
-    print(albums[genre][album]["songs"]
-        [flask.request.get_json().get("song_index")][2])
     # noinspection PyTypeChecker
     new_url = yt_dlp.YoutubeDL({
         "format": "bestaudio/best",
@@ -248,12 +278,12 @@ def generic_album_regenerate(genre, album):
     ).extract_info(
         albums[genre][album]["songs"]
         [flask.request.get_json().get("song_index")][2],
-                   download=False).get("url")
+        download=False).get("url")
     song_info = list(albums[genre][album]["songs"]
-    [flask.request.get_json().get("song_index")])
+                     [flask.request.get_json().get("song_index")])
     song_info[1] = new_url
     (albums[genre][album]["songs"]
-    [flask.request.get_json().get("song_index")]) = song_info
+        [flask.request.get_json().get("song_index")]) = song_info
     return flask.jsonify({"url": [new_url]})
 
 

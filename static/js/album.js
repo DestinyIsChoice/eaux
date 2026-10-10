@@ -14,7 +14,7 @@ let albumData = {
 let index = 0;
 let fadeInInterval = null;
 
-function updateAudio() {
+async function updateAudio() {
 
   async function validateAudio() {
     const newUrl = albumData.albums[album].songs[index][1];
@@ -30,9 +30,7 @@ function updateAudio() {
   }
 
   while (index < albumData.albums[album].songs.length) {
-    if (validateAudio()) {
-      break;
-    }
+    if (await validateAudio()) break;
     index++;
   }
   if (index === albumData.albums[album].songs.length) allButtons.forEach(button => button.classList.remove("active"));
@@ -45,9 +43,11 @@ async function fadeOut() {
   }
 }
 
-audio.addEventListener("ended", () => {
+audio.addEventListener("ended", async () => {
   index++;
-  updateAudio();
+  console.log(index);
+  await updateAudio();
+  console.log(index);
 });
 
 audio.addEventListener("timeupdate", async () => {
@@ -60,7 +60,7 @@ listContainer.addEventListener("click", async (event) => {
   if (button) {
     await fadeOut();
     index = allButtons.indexOf(button);
-    updateAudio();
+    await updateAudio();
   }
 });
 
@@ -81,9 +81,9 @@ audio.addEventListener("play", () => {
 
 fetch(`albums`)
   .then((response) => response.json())
-  .then((data) => {
+  .then(async (data) => {
     albumData = data;
-    updateAudio();
+    await updateAudio();
     const primaryHsv = convert.rgb.hsv(data.albums[album].colors[1]);
     const secondaryHsv = convert.rgb.hsv(data.albums[album].colors[2]);
     const backgroundHsv = convert.rgb.hsv(data.albums[album].colors[0]);
@@ -103,7 +103,7 @@ fetch(`albums`)
       `#${convert.rgb.hex(backgroundR * 2.314, backgroundG * 2.314, backgroundB * 2.314)}`);
   })
 
-source.addEventListener("error", () => {
+source.addEventListener("error", async () => {
   fetch(`/${genre}/${album}/regenerate`, {
     method: "POST",
     headers: {
