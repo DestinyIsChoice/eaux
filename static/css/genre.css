@@ -224,7 +224,10 @@ button[name="album-submit"]:active {
 
 .carousel-track {
     display: flex;
-    width: max-content;
+    justify-content: center;
+    opacity: 0;
+    width: 100%;
+    transition: opacity 0.2s ease-in-out;
 }
 
 .carousel-container:hover .carousel-track {

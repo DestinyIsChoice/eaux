@@ -105,7 +105,7 @@
         {% endfor %}
         {% for album in albums %}
         <a href="/{{ genre }}/{{ album }}" class="album-button" aria-hidden="true">
-            {{ album }} -
+            {{ album }} - {{ artists[loop.index0] }}
         </a>
         {% endfor %}
     </div>

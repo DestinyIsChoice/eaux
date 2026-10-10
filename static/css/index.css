@@ -71,7 +71,7 @@
     cursor: pointer;
     display: flex;
     font-family: sans-serif;
-    font-weight: bold;
+    font-weight: 700;
     height: 32px;
     justify-content: center;
     transition: background-color 0.2s ease-in-out,
