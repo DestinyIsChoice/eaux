@@ -1,16 +1,67 @@
 import convert from "color-convert";
 
 const audio = document.getElementById("audio");
+const carousel = document.getElementById("carousel-track");
+const carouselDivider = document.getElementById("carousel-divider");
 const genre = document.getElementById("genre").dataset.genre;
 const list = document.getElementById("list");
 const source = document.getElementById("source");
+let albumsResponse = null;
 let fadeInInterval = null;
 
+function updateCarouselSizing() {
+  const containerWidth = document.getElementById("carousel-container").getBoundingClientRect().width;
+  const originals = Array.from(carousel.querySelectorAll(".album-button.original-slide"));
+  const duplicates = Array.from(carousel.querySelectorAll(".album-button.duplicate-slide"));
+  const allButtons = [...originals, ...duplicates];
+  if (originals.length === 0) return;
+  allButtons.forEach(slide => slide.style.width = "auto");
+  let totalOriginalsWidth = 0;
+  originals.forEach((slide) => {
+    totalOriginalsWidth += slide.getBoundingClientRect().width + 16;
+  });
+  if (totalOriginalsWidth + 40 <= containerWidth) {
+    carousel.style.animation = "none";
+    carousel.style.width = "100%";
+    carousel.style.justifyContent = "center";
+    duplicates.forEach(slide => slide.style.display = "none");
+  } else {
+    carousel.style.width = "max-content";
+    carousel.style.justifyContent = "flex-start";
+    duplicates.forEach((slide) => {
+      slide.style.display = slide.classList.contains("entering") ? "none" : "block";
+    });
+    carousel.style.setProperty("--scroll-width", `${totalOriginalsWidth}px`);
+    if (!carousel.style.animation || carousel.style.animation.includes("none")) {
+      carousel.style.animation = `dynamicScroll ${totalOriginalsWidth / 100}s linear infinite`;
+    } else {
+      carousel.style.animationDuration = `${totalOriginalsWidth / 100}s`;
+    }
+  }
+}
+
 document.addEventListener("DOMContentLoaded", () => {
-  const songTrigger = document.querySelector(".song-form-dropdown-trigger");
-  const albumTrigger = document.querySelector(".album-form-dropdown-trigger");
-  const songForm = document.getElementById("song-form");
   const albumForm = document.getElementById("album-form");
+  const albumTrigger = document.querySelector(".album-form-dropdown-trigger");
+  const carouselContainer = document.getElementById("carousel-container");
+  const songForm = document.getElementById("song-form");
+  const songTrigger = document.querySelector(".song-form-dropdown-trigger");
+  let currentScrollOffset = 0;
+  let isMoving = false;
+  let targetScrollOffset = 0;
+
+  function smoothAnimateScroll() {
+    currentScrollOffset += (targetScrollOffset - currentScrollOffset) * 0.15;
+    const duration = parseFloat(carousel.style.animationDuration);
+    if (duration) carousel.style.animationDelay = `${-((currentScrollOffset % duration + duration) % duration)}s`;
+    if (Math.abs(targetScrollOffset - currentScrollOffset) > 0.001) {
+      requestAnimationFrame(smoothAnimateScroll);
+    } else {
+      currentScrollOffset = targetScrollOffset;
+      isMoving = false;
+    }
+  }
+
   if (songTrigger && songForm) {
     songTrigger.addEventListener("click", (event) => {
       event.stopPropagation();
@@ -48,60 +99,22 @@ document.addEventListener("DOMContentLoaded", () => {
       body: new FormData(albumForm)
     });
   });
-  const carouselTrack = document.getElementById("carousel-track");
-  const albumButtons = Array.from(carouselTrack.querySelectorAll(".album-button"));
-  if (albumButtons.length === 0) return;
-  const gap = 16;
-  const uniqueSlideCount = albumButtons.length / 2;
-
-  function setupCarouselSizing() {
-    carouselTrack.style.animation = "none";
-    carouselTrack.style.transform = "translateX(0)";
-    albumButtons.forEach((slide) => {
-      slide.style.display = "block";
-      slide.style.marginRight = `${gap}px`;
-      slide.style.width = "auto";
-    });
-    let totalOriginalsWidth = 0;
-    for (let i = 0; i < uniqueSlideCount; i++) {
-      totalOriginalsWidth += albumButtons[i].getBoundingClientRect().width + gap;
-    }
-    if (totalOriginalsWidth + 40
-      <= document.getElementById("carousel-container").getBoundingClientRect().width) {
-      carouselTrack.style.width = "100%";
-      carouselTrack.style.justifyContent = "center";
-      albumButtons.forEach((slide, index) => {
-        if (index >= uniqueSlideCount) {
-          slide.style.display = "none";
-        } else if (index === uniqueSlideCount - 1) slide.style.marginRight = "0";
-      });
-    } else {
-      carouselTrack.style.width = "max-content";
-      carouselTrack.style.justifyContent = "flex-start";
-      const styleId = "dynamic-carousel-keyframes";
-      let styleElement = document.getElementById(styleId);
-      if (!styleElement) {
-        styleElement = document.createElement("style");
-        styleElement.id = styleId;
-        document.head.appendChild(styleElement);
+  carouselContainer.addEventListener("wheel", (event) => {
+    if (carousel.style.animation && carousel.style.animation !== "none") {
+      event.preventDefault();
+      if (!isMoving) {
+        targetScrollOffset = parseFloat(carousel.style.animationDelay) || 0;
+        currentScrollOffset = targetScrollOffset;
+        isMoving = true;
+        requestAnimationFrame(smoothAnimateScroll);
       }
-      const translationDistance = totalOriginalsWidth;
-      styleElement.innerHTML = `
-          @keyframes dynamicScroll {
-              0% { transform: translateX(0); }
-              100% { transform: translateX(-${translationDistance}px); }
-          }
-      `;
-      const dynamicDuration = translationDistance / 100;
-      carouselTrack.style.animation = `dynamicScroll ${dynamicDuration}s linear infinite`;
+      targetScrollOffset -= event.deltaY * 0.003;
     }
-  }
-
-  setupCarouselSizing();
-  carouselTrack.style.opacity = "100%";
-  window.addEventListener("resize", setupCarouselSizing);
+  }, { passive: false });
+  updateCarouselSizing();
+  carousel.style.opacity = "100%";
 });
-
+window.addEventListener("resize", updateCarouselSizing);
 audio.addEventListener("timeupdate", async () => {
   if (!audio.duration) return;
   if (audio.duration - audio.currentTime <= 1) {
@@ -111,20 +124,17 @@ audio.addEventListener("timeupdate", async () => {
     }
   }
 });
-
 audio.addEventListener("play", () => {
   clearInterval(fadeInInterval);
   audio.volume = 0;
-  const intervalTime = 50;
-  const volumeIncrement = intervalTime / 1000;
   fadeInInterval = setInterval(() => {
-    if (audio.volume < 1 - volumeIncrement) {
-      audio.volume += volumeIncrement;
+    if (audio.volume < 1 - 0.05) {
+      audio.volume += 0.05;
     } else {
       audio.volume = 1;
       clearInterval(fadeInInterval);
     }
-  }, intervalTime);
+  }, 50);
 });
 
 function updateContent() {
@@ -140,7 +150,6 @@ function updateContent() {
         newUrl.slice(0, newUrl.indexOf("#")) !==
         oldUrl.slice(0, oldUrl.indexOf("#"))
       ) audio.load();
-      if (!audio.paused) audio.play().catch(() => {});
       const primaryHsv = data.queue.length !== 0 ? convert.rgb.hsv(data.queue[0].colors[1]) : [276.67, 31.3, 90.2];
       const secondaryHsv = data.queue.length !== 0 ? convert.rgb.hsv(data.queue[0].colors[2]) : [229.41, 32.69, 20.39];
       const backgroundHsv = data.queue.length !== 0 ? convert.rgb.hsv(data.queue[0].colors[0]) : [229.41, 32.69, 20.39];
@@ -162,6 +171,8 @@ function updateContent() {
         `#${convert.rgb.hex(backgroundR * 2.086, backgroundG * 2.086, backgroundB * 2.086)}`);
       document.documentElement.style.setProperty("--background-5-color",
         `#${convert.rgb.hex(backgroundR * 2.314, backgroundG * 2.314, backgroundB * 2.314)}`);
+
+      // noinspection JSUnresolvedVariable
       const newHTML = data.queue
         .map(
           (song) =>
@@ -184,9 +195,44 @@ function updateContent() {
       void list.offsetHeight;
       list.style.height = `${targetHeight}px`;
     })
-    .catch(() => {});
+  fetch(`/${genre}/albums`)
+    .then((response) => response.json())
+    .then((data) => {
+      if (albumsResponse && JSON.stringify(Object.keys(albumsResponse.albums)) === JSON.stringify(Object.keys(data.albums))) return;
+      const container = document.querySelector(".carousel-container");
+
+      const injectNewAlbums = () => {
+        for (const album of Object.keys(data.albums)) {
+          if (!albumsResponse || !Object.hasOwn(albumsResponse.albums, album)) {
+            const albumButton = document.createElement("a");
+            const albumButtonAriaHidden = document.createElement("a");
+            albumButton.href = `/${genre}/${album}`;
+            albumButton.className = "album-button original-slide";
+
+            // noinspection JSUnresolvedVariable
+            albumButton.textContent = `${album} - ${data.albums[album].artist_name}`;
+            albumButtonAriaHidden.href = `/${genre}/${album}`;
+            albumButtonAriaHidden.className = "album-button duplicate-slide";
+            albumButtonAriaHidden.ariaHidden = "true";
+
+            // noinspection JSUnresolvedVariable
+            albumButtonAriaHidden.textContent = `${album} - ${data.albums[album].artist_name}`;
+            albumButtonAriaHidden.style.display = "none";
+            carouselDivider.before(albumButton);
+            carousel.append(albumButtonAriaHidden);
+          }
+        }
+        albumsResponse = data;
+        updateCarouselSizing();
+      };
+
+      container.classList.add("container-fading");
+      setTimeout(() => {
+        injectNewAlbums();
+        container.classList.remove("container-fading");
+      }, 300);
+    });
 }
 
 if (window.history.replaceState) window.history.replaceState(null, null, window.location.href);
-
 setInterval(updateContent, 1000);

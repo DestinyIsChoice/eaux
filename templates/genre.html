@@ -12,6 +12,7 @@
             --background-3-color: #414559;
             --background-4-color: #494d64;
             --background-5-color: #51576d;
+            --scroll-width: 0;
         }
     </style>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.3.1/css/all.min.css">
@@ -98,16 +99,7 @@
 </form>
 <div class="carousel-container" id="carousel-container">
     <div class="carousel-track" id="carousel-track">
-        {% for album in albums %}
-        <a href="/{{ genre }}/{{ album }}" class="album-button">
-            {{ album }} - {{ artists[loop.index0] }}
-        </a>
-        {% endfor %}
-        {% for album in albums %}
-        <a href="/{{ genre }}/{{ album }}" class="album-button" aria-hidden="true">
-            {{ album }} - {{ artists[loop.index0] }}
-        </a>
-        {% endfor %}
+        <div class="carousel-divider" id="carousel-divider"></div>
     </div>
 </div>
 </body>

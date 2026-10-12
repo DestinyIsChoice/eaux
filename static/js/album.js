@@ -23,9 +23,6 @@ async function updateAudio() {
     allButtons[index].classList.add("active");
     source.src = newUrl;
     audio.load();
-    if (!audio.paused) audio.play().catch(() => {
-      return false;
-    });
     return true;
   }
 
@@ -35,26 +32,22 @@ async function updateAudio() {
   }
   if (index === albumData.albums[album].songs.length) allButtons.forEach(button => button.classList.remove("active"));
 }
-
 async function fadeOut() {
   while (audio.volume > 0.25) {
     audio.volume -= 0.25;
     await new Promise(resolve => setTimeout(resolve, 50));
   }
 }
-
 audio.addEventListener("ended", async () => {
   index++;
   console.log(index);
   await updateAudio();
   console.log(index);
 });
-
 audio.addEventListener("timeupdate", async () => {
   if (!audio.duration) return;
   if (audio.duration - audio.currentTime <= 1) await fadeOut();
 });
-
 listContainer.addEventListener("click", async (event) => {
   const button = event.target.closest(".song-button");
   if (button) {
@@ -63,22 +56,18 @@ listContainer.addEventListener("click", async (event) => {
     await updateAudio();
   }
 });
-
 audio.addEventListener("play", () => {
   clearInterval(fadeInInterval);
   audio.volume = 0;
-  const intervalTime = 50;
-  const volumeIncrement = intervalTime / 1000;
   fadeInInterval = setInterval(() => {
-    if (audio.volume < 1 - volumeIncrement) {
-      audio.volume += volumeIncrement;
+    if (audio.volume < 1 - 0.05) {
+      audio.volume += 0.05;
     } else {
       audio.volume = 1;
       clearInterval(fadeInInterval);
     }
-  }, intervalTime);
+  }, 50);
 });
-
 fetch(`albums`)
   .then((response) => response.json())
   .then(async (data) => {
@@ -102,7 +91,6 @@ fetch(`albums`)
     document.documentElement.style.setProperty("--background-3-color",
       `#${convert.rgb.hex(backgroundR * 2.314, backgroundG * 2.314, backgroundB * 2.314)}`);
   })
-
 source.addEventListener("error", async () => {
   fetch(`/${genre}/${album}/regenerate`, {
     method: "POST",
@@ -120,11 +108,6 @@ source.addEventListener("error", async () => {
       }
       source.src = data.url;
       audio.load();
-      if (!audio.paused) audio.play().catch(() => {
-        index++;
-        updateAudio();
-      });
     });
 });
-
 if (window.history.replaceState) window.history.replaceState(null, null, window.location.href);

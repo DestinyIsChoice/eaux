@@ -106,7 +106,7 @@ body {
 }
 
 .album-form-dropdown-trigger:active,
-.form-dropdown-trigger:active {
+.song-form-dropdown-trigger:active {
     transform: scale(0.98);
 }
 
@@ -211,27 +211,32 @@ button[name="album-submit"]:active {
     height: 86px;
     left: 50%;
     max-width: 1200px;
+    opacity: 1;
     overflow: hidden;
     padding: 20px 0;
     position: fixed;
     transform: translateX(-50%);
     width: 90%;
     z-index: 9999;
-    transition: background 0.2s,
+    transition: background 0.2s ease-in-out,
     box-shadow 0.2s ease-in-out;
+}
 
+.carousel-container.container-fading .carousel-track {
+    opacity: 0 !important;
+}
+
+.carousel-container:hover .carousel-track {
+    animation-play-state: paused !important;
 }
 
 .carousel-track {
     display: flex;
     justify-content: center;
-    opacity: 0;
     width: 100%;
+    white-space: nowrap;
+    will-change: transform;
     transition: opacity 0.2s ease-in-out;
-}
-
-.carousel-container:hover .carousel-track {
-    animation-play-state: paused !important;
 }
 
 .album-button {
@@ -243,6 +248,11 @@ button[name="album-submit"]:active {
     flex-shrink: 0;
     font-size: 1rem;
     font-weight: 700;
+    margin-left: 8px;
+    margin-right: 8px;
+    max-width: 400px;
+    min-width: 0;
+    overflow: hidden;
     padding: 14px 32px;
     text-decoration: none;
     text-shadow: -2px 2px 0 var(--secondary-color);
@@ -251,8 +261,7 @@ button[name="album-submit"]:active {
     width: auto;
     transition: background-color 0.2s ease-in-out,
     color 0.2s ease-in-out,
-    text-shadow 0.2s ease-in-out,
-    transform 0.1s ease-in-out;
+    transform 0.2s ease-in-out;
 }
 
 .album-button:hover {
@@ -264,4 +273,13 @@ button[name="album-submit"]:active {
 
 .album-button:active {
     transform: scale(0.98);
+}
+
+@keyframes dynamicScroll {
+    0% {
+        transform: translateX(0);
+    }
+    100% {
+        transform: translateX(calc(-1 * var(--scroll-width, 0px)));
+    }
 }
