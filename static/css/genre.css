@@ -15,12 +15,13 @@ body {
     background-color: var(--background-3-color);
     box-shadow: -8px 8px 0 var(--background-0-color);
     color: var(--primary-color);
+    transition: transform 0.1s ease-in-out;
 }
 
 .back-button:hover {
     background-color: var(--primary-color);
     text-shadow: 0 0 0 var(--secondary-color);
-    transform: scale(1.02);
+    transform: scale(1.02) translate(1px, -1px);
 }
 
 .back-button:visited .home-icon {
@@ -32,14 +33,14 @@ body {
 }
 
 #genre {
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
     background-clip: padding-box;
     font-size: 2.5rem;
     font-weight: 700;
     letter-spacing: -0.05em;
     margin-bottom: 10px;
     text-transform: capitalize;
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
 }
 
 .list-container {
@@ -56,9 +57,7 @@ body {
     overflow: hidden;
     text-align: center;
     text-shadow: -2px 2px 0 var(--secondary-color);
-    transition: color 0.2s ease-in-out,
-    height 0.35s ease-in-out,
-    text-shadow 0.2s ease-in-out;
+    transition: color 0.2s ease-in-out, height 0.35s ease-in-out, text-shadow 0.2s ease-in-out;
 }
 
 #list.expanded {
@@ -87,10 +86,7 @@ body {
     margin: 0 auto;
     padding: 14px;
     text-shadow: -2px 2px 0 var(--secondary-color);
-    transition: background-color 0.2s ease-in-out,
-    color 0.2s ease-in-out,
-    text-shadow 0.2s ease-in-out,
-    transform 0.1s ease-in-out;
+    transition: background-color 0.2s ease-in-out, color 0.2s ease-in-out, text-shadow 0.2s ease-in-out, transform 0.1s ease-in-out;
     width: 80%;
 }
 
@@ -99,15 +95,12 @@ body {
     background-color: var(--primary-color);
     color: var(--background-3-color);
     text-shadow: 0 0 0 var(--secondary-color);
-    transform: scale(1.02);
-    transition: background-color 0.2s ease-in-out,
-    color 0.2s ease-in-out,
-    text-shadow 0.2s ease-in-out;
+    transform: scale(1.02) translate(1px, -1px);
 }
 
 .album-form-dropdown-trigger:active,
 .song-form-dropdown-trigger:active {
-    transform: scale(0.98);
+    transform: scale(0.98) translate(-1px, 1px);
 }
 
 #song-form,
@@ -122,11 +115,7 @@ body {
     overflow: hidden;
     padding: 0 24px;
     margin: 0 auto;
-    transition: margin-top 0.3s ease-in-out,
-    margin-bottom 0.3s ease-in-out,
-    max-height 0.3s ease-in-out,
-    padding 0.3s ease-in-out,
-    visibility 0.3s ease-in-out;
+    transition: margin-top 0.3s ease-in-out, margin-bottom 0.3s ease-in-out, max-height 0.3s ease-in-out, padding 0.3s ease-in-out, visibility 0.3s ease-in-out;
     visibility: hidden;
     width: 100%;
 }
@@ -141,9 +130,9 @@ body {
     visibility: visible;
 }
 
-input[name="song-search"],
-input[name="album-search"],
-input[name="artist-search"] {
+input[name=song-search],
+input[name=album-search],
+input[name=artist-search] {
     background-color: var(--background-0-color);
     border: 1px solid var(--background-1-color);
     border-radius: 6px;
@@ -153,16 +142,13 @@ input[name="artist-search"] {
     text-indent: 4px;
     text-shadow: -2px 2px 0 var(--secondary-color);
     text-transform: lowercase;
-    transition: background-color 0.2s ease-in-out,
-    border-color 0.2s ease-in-out,
-    color 0.2s ease-in-out,
-    text-shadow 0.2s ease-in-out;
+    transition: background-color 0.2s ease-in-out, border-color 0.2s ease-in-out, color 0.2s ease-in-out, text-shadow 0.2s ease-in-out;
     width: 100%;
 }
 
-input[name="song-search"]:focus,
-input[name="album-search"]:focus,
-input[name="artist-search"]:focus {
+input[name=song-search]:focus,
+input[name=album-search]:focus,
+input[name=artist-search]:focus {
     background-color: var(--background-2-color);
     border-color: var(--background-0-color);
     outline: none;
@@ -172,8 +158,8 @@ input::placeholder {
     color: var(--background-5-color);
 }
 
-button[name="song-submit"],
-button[name="album-submit"] {
+button[name=song-submit],
+button[name=album-submit] {
     background-color: var(--background-4-color);
     border: none;
     border-radius: 6px;
@@ -183,24 +169,21 @@ button[name="album-submit"] {
     font-weight: 700;
     padding: 14px;
     text-shadow: -2px 2px 0 var(--secondary-color);
-    transition: background-color 0.2s ease-in-out,
-    color 0.2s ease-in-out,
-    text-shadow 0.2s ease-in-out,
-    transform 0.1s ease-in-out;
+    transition: background-color 0.2s ease-in-out, color 0.2s ease-in-out, text-shadow 0.2s ease-in-out, transform 0.1s ease-in-out;
     width: 100%;
 }
 
-button[name="song-submit"]:hover,
-button[name="album-submit"]:hover {
+button[name=song-submit]:hover,
+button[name=album-submit]:hover {
     background-color: var(--primary-color);
     color: var(--background-4-color);
     text-shadow: 0 0 0 var(--secondary-color);
-    transform: scale(1.02);
+    transform: scale(1.02) translate(1px, -1px);
 }
 
-button[name="song-submit"]:active,
-button[name="album-submit"]:active {
-    transform: scale(0.98);
+button[name=song-submit]:active,
+button[name=album-submit]:active {
+    transform: scale(0.98) translate(-1px, 1px);
 }
 
 .carousel-container {
@@ -218,8 +201,7 @@ button[name="album-submit"]:active {
     transform: translateX(-50%);
     width: 90%;
     z-index: 9999;
-    transition: background 0.2s ease-in-out,
-    box-shadow 0.2s ease-in-out;
+    transition: background 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
 }
 
 .carousel-container.container-fading .carousel-track {
@@ -259,27 +241,21 @@ button[name="album-submit"]:active {
     text-transform: lowercase;
     white-space: nowrap;
     width: auto;
-    transition: background-color 0.2s ease-in-out,
-    color 0.2s ease-in-out,
-    transform 0.2s ease-in-out;
+    transition: background-color 0.2s ease-in-out, color 0.2s ease-in-out, transform 0.1s ease-in-out;
 }
 
 .album-button:hover {
     background-color: var(--primary-color);
     color: #494d64;
     text-shadow: 0 0 0 var(--primary-color);
-    transform: scale(1.02);
+    transform: scale(1.02) translate(1px, -1px);
 }
 
 .album-button:active {
-    transform: scale(0.98);
+    transform: scale(0.98) translate(-1px, 1px);
 }
 
 @keyframes dynamicScroll {
-    0% {
-        transform: translateX(0);
-    }
-    100% {
-        transform: translateX(calc(-1 * var(--scroll-width, 0px)));
-    }
+    0% { transform: translateX(0); }
+    100% { transform: translateX(calc(-1 * var(--scroll-width, 0px))); }
 }

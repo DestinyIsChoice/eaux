@@ -10,6 +10,7 @@
             --background-1-color: #303446;
             --background-2-color: #414559;
             --background-3-color: #51576d;
+            --slider-progress: 100%;
         }
     </style>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.3.1/css/all.min.css">
@@ -47,6 +48,18 @@
         {{ song }}
     </button>
     {% endfor %}
+</div>
+<div class="volume-slider-container">
+    <label>
+        <input
+                type="range"
+                id="volume-slider"
+                class="volume-slider"
+                min="0"
+                max="100"
+                value="100"
+        >
+    </label>
 </div>
 </body>
 </html>

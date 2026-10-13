@@ -13,6 +13,7 @@
             --background-4-color: #494d64;
             --background-5-color: #51576d;
             --scroll-width: 0;
+            --slider-progress: 100%;
         }
     </style>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.3.1/css/all.min.css">
@@ -97,6 +98,18 @@
     >submit
     </button>
 </form>
+<div class="volume-slider-container">
+    <label>
+        <input
+                type="range"
+                id="volume-slider"
+                class="volume-slider"
+                min="0"
+                max="100"
+                value="100"
+        >
+    </label>
+</div>
 <div class="carousel-container" id="carousel-container">
     <div class="carousel-track" id="carousel-track">
         <div class="carousel-divider" id="carousel-divider"></div>

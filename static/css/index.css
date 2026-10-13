@@ -37,22 +37,24 @@
     padding: 14px 32px;
     text-decoration: none;
     text-shadow: -2px 2px 0 #232634;
+    white-space: nowrap;
     transition: background-color 0.2s ease-in-out,
     color 0.2s ease-in-out,
     text-shadow 0.2s ease-in-out,
     transform 0.1s ease-in-out;
-    white-space: nowrap;
 }
 
 .genre-button:hover {
     background-color: #ca9ee6;
     color: #494d64;
     text-shadow: 0 0 0 #232634;
-    transform: scale(1.02);
+    transform: scale(1.02)
+    translate(1px, -1px);
 }
 
 .genre-button:active {
-    transform: scale(0.98);
+    transform: scale(0.98)
+    translate(-1px, 1px);
 }
 
 .policy-container {
@@ -74,18 +76,19 @@
     font-weight: 700;
     height: 32px;
     justify-content: center;
+    width: 32px;
     transition: background-color 0.2s ease-in-out,
     color 0.2s ease-in-out,
     text-shadow 0.2s ease-in-out,
     transform 0.1s ease-in-out;
-    width: 32px;
 }
 
 .policy-icon:hover {
     background-color: #ca9ee6;
     color: #494d64;
     text-shadow: 0 0 0 #232634;
-    transform: scale(1.02);
+    transform: scale(1.02)
+    translate(1px, -1px);
 }
 
 .policy {
@@ -98,11 +101,11 @@
     position: absolute;
     right: 0;
     transform: translateY(10px);
+    visibility: hidden;
+    width: 220px;
     transition: opacity 0.3s ease-in-out,
     transform 0.3s ease-in-out,
     visibility 0.3s ease-in-out;
-    visibility: hidden;
-    width: 220px;
 }
 
 .policy-container:hover .policy {

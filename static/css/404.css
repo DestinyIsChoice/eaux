@@ -32,12 +32,14 @@
     background-color: #494d64;
     box-shadow: -8px 8px 0 #232634;
     color: #ca9ee6;
+    transition: transform 0.1s ease-in-out;
 }
 
 .back-button:hover {
     background-color: #ca9ee6;
     text-shadow: 0 0 0 #232634;
-    transform: scale(1.02);
+    transform: scale(1.02)
+    translate(1px, -1px);
 }
 
 .back-button:visited .home-icon {

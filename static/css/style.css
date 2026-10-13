@@ -1,5 +1,17 @@
 @import url("https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,opsz,wght@0,8..60,200..900;1,8..60,200..900&display=swap");
 
+@property --primary-color {
+    syntax: "<color>";
+    inherits: true;
+    initial-value: #000;
+}
+
+@property --background-0-color {
+    syntax: "<color>";
+    inherits: true;
+    initial-value: #fff;
+}
+
 * {
     box-sizing: border-box;
     font-family: "Source Serif 4", "Times New Roman", Times, Georgia, serif;
@@ -38,9 +50,119 @@ body {
     height: 32px;
     justify-content: center;
     text-decoration: none;
+    width: 32px;
     transition: background-color 0.2s ease-in-out,
     color 0.2s ease-in-out,
     text-shadow 0.2s ease-in-out,
     transform 0.1s ease-in-out;
+}
+
+.volume-slider-container {
+    align-items: center;
+    box-sizing: border-box;
+    display: flex;
+    justify-content: center;
+    margin: 15px auto;
+    max-width: 400px;
+    padding: 0 24px;
+    width: 100%;
+}
+
+.volume-slider-container label {
+    border-radius: 6px;
+    display: block;
+    height: 14px;
+    position: relative;
+    width: 92%;
+}
+
+.volume-slider-container label::before {
+    border-radius: 6px;
+    content: "";
+    height: 100%;
+    left: 0;
+    opacity: 0;
+    pointer-events: none;
+    position: absolute;
+    top: 0;
+    width: 100%;
+    z-index: 1;
+    transition: opacity 0.2s ease-in-out;
+}
+
+.volume-slider-container:hover label::before {
+    opacity: 1;
+}
+
+.volume-slider {
+    -webkit-appearance: none;
+    appearance: none;
+    background: linear-gradient(
+            to right,
+            var(--primary-color) 0%,
+            var(--primary-color) var(--slider-progress),
+            var(--background-0-color) var(--slider-progress),
+            var(--background-0-color) 100%
+    );
+    border-radius: 6px;
+    cursor: pointer;
+    height: 100%;
+    left: 0;
+    margin-top: 30px;
+    outline: none;
+    position: absolute;
+    top: 0;
+    width: 100%;
+    z-index: 2;
+    transition: --primary-color 0.2s ease-in-out,
+    --background-0-color 0.2s ease-in-out;
+}
+
+.volume-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    background-color: var(--background-3-color);
+    border-radius: 6px;
+    box-shadow: -8px 8px 0 var(--background-0-color);
+    cursor: pointer;
+    height: 32px;
     width: 32px;
+    margin-top: -9px;
+    position: relative;
+    z-index: 3;
+    transition: background-color 0.2s ease-in-out,
+    box-shadow 0.2s ease-in-out,
+    transform 0.1s ease-in-out;
+}
+
+.volume-slider::-webkit-slider-thumb:hover {
+    background-color: var(--primary-color);
+    transform: scale(1.02) translate(1px, -1px);
+}
+
+.volume-slider::-webkit-slider-thumb:active {
+    transform: scale(0.98) translate(-1px, 1px);
+}
+
+.volume-slider::-moz-range-thumb {
+    background-color: var(--background-3-color);
+    border-radius: 6px;
+    box-shadow: -8px 8px 0 var(--background-0-color);
+    cursor: pointer;
+    height: 32px;
+    width: 32px;
+    position: relative;
+    z-index: 3;
+    transition: background-color 0.2s ease-in-out,
+    box-shadow 0.2s ease-in-out,
+    transform 0.1s ease-in-out;
+}
+
+.volume-slider::-moz-range-thumb:hover {
+    background-color: var(--primary-color);
+    transform: scale(1.02) translate(1px, -1px);
+}
+
+.volume-slider::-moz-range-thumb:active {
+    transform: scale(0.98) translate(-1px, 1px);
 }
