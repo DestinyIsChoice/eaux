@@ -48,13 +48,11 @@
     background-color: #ca9ee6;
     color: #494d64;
     text-shadow: 0 0 0 #232634;
-    transform: scale(1.02)
-    translate(1px, -1px);
+    transform: scale(1.02) translate(1px, -1px);
 }
 
 .genre-button:active {
-    transform: scale(0.98)
-    translate(-1px, 1px);
+    transform: scale(0.98) translate(-1px, 1px);
 }
 
 .policy-container {
@@ -87,8 +85,7 @@
     background-color: #ca9ee6;
     color: #494d64;
     text-shadow: 0 0 0 #232634;
-    transform: scale(1.02)
-    translate(1px, -1px);
+    transform: scale(1.02) translate(1px, -1px);
 }
 
 .policy {

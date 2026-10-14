@@ -21,8 +21,7 @@ body {
 .back-button:hover {
     background-color: var(--primary-color);
     text-shadow: 0 0 0 var(--secondary-color);
-    transform: scale(1.02)
-    translate(1px, -1px);
+    transform: scale(1.02) translate(1px, -1px);
 }
 
 .back-button:visited .back-icon {

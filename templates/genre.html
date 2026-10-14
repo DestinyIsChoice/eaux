@@ -68,34 +68,8 @@
             type="submit"
             name="song-submit"
             value="clicked"
-    >submit
-    </button>
-</form>
-<div class="album-form-dropdown-container">
-    <button type="button" class="album-form-dropdown-trigger">
-        submit an album
-    </button>
-</div>
-<form id="album-form" method="POST">
-    <label>
-        <input
-                spellcheck="false"
-                name="album-search"
-                placeholder="album"
-        >
-    </label>
-    <label>
-        <input
-                spellcheck="false"
-                name="artist-search"
-                placeholder="artist"
-        >
-    </label>
-    <button
-            type="submit"
-            name="album-submit"
-            value="clicked"
-    >submit
+    >
+        submit
     </button>
 </form>
 <div class="volume-slider-container">
@@ -111,9 +85,40 @@
     </label>
 </div>
 <div class="carousel-container" id="carousel-container">
+    <div class="album-form-dropdown-container">
+        <button
+                type="button"
+                class="album-form-dropdown-trigger"
+        >
+            <i class="fa-solid fa-plus"></i>
+        </button>
+    </div>
     <div class="carousel-track" id="carousel-track">
         <div class="carousel-divider" id="carousel-divider"></div>
     </div>
+    <form id="album-form" method="POST">
+        <label>
+            <input
+                    spellcheck="false"
+                    name="album-search"
+                    placeholder="album"
+            >
+        </label>
+        <label>
+            <input
+                    spellcheck="false"
+                    name="artist-search"
+                    placeholder="artist"
+            >
+        </label>
+        <button
+                type="submit"
+                name="album-submit"
+                value="clicked"
+        >
+            submit
+        </button>
+    </form>
 </div>
 </body>
 </html>

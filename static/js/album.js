@@ -122,6 +122,6 @@ fetch(`albums`)
       `#${convert.rgb.hex(backgroundR * 1.857, backgroundG * 1.857, backgroundB * 1.857)}`);
     document.documentElement.style.setProperty("--background-4-color",
       `#${convert.rgb.hex(backgroundR * 2.314, backgroundG * 2.314, backgroundB * 2.314)}`);
-  })
+  });
 if (window.history.replaceState) window.history.replaceState(null, null, window.location.href);
 volumeSlider.style.setProperty("--slider-progress", "100%");
