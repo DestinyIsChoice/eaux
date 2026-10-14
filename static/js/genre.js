@@ -188,6 +188,7 @@ document.addEventListener("DOMContentLoaded", () => {
   if (songTrigger && songForm) {
     songTrigger.addEventListener("click", (event) => {
       event.stopPropagation();
+      if (carouselContainer) carouselContainer.classList.remove("form-active");
       songForm.classList.toggle("show");
     });
   }
@@ -199,20 +200,8 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
   document.addEventListener("click", (event) => {
-    const clickedTarget = event.target;
-    if (songForm && songForm.classList.contains("show")) {
-      if (!songForm.contains(clickedTarget) && clickedTarget !== songTrigger) {
-        songForm.classList.remove("show");
-      }
-    }
-    if (carouselContainer && carouselContainer.classList.contains("form-active")) {
-      if (!carouselContainer.contains(clickedTarget)) {
-        carouselContainer.classList.remove("form-active");
-      }
-    }
-  });
-  document.addEventListener("click", (event) => {
-    if (songForm && songForm.classList.contains("show")
+    if (songForm
+      && songForm.classList.contains("show")
       && !songForm.contains(event.target)
       && event.target !== songTrigger) songForm.classList.remove("show");
     if (carouselContainer
