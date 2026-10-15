@@ -1,27 +1,8 @@
 body {
     background-color: var(--background-2-color);
+    box-sizing: border-box;
+    padding-bottom: 160px;
     transition: background-color 0.2s ease-in-out;
-}
-
-.back-button-container {
-    left: 20px;
-    position: fixed;
-    text-shadow: -2px 2px 0 var(--secondary-color);
-    top: 20px;
-    z-index: 9999;
-}
-
-.back-button {
-    background-color: var(--background-3-color);
-    box-shadow: -8px 8px 0 var(--background-0-color);
-    color: var(--primary-color);
-    transition: transform 0.1s ease-in-out;
-}
-
-.back-button:hover {
-    background-color: var(--primary-color);
-    text-shadow: 0 0 0 var(--secondary-color);
-    transform: scale(1.02) translate(1px, -1px);
 }
 
 .back-button:visited .home-icon {

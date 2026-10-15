@@ -51,7 +51,7 @@ audio.addEventListener("ended", async () => {
 });
 audio.addEventListener("timeupdate", async () => {
   if (!audio.duration) return;
-  if (audio.duration - audio.currentTime <= 1) await fadeOut();
+  if (audio.duration - audio.currentTime <= 0.2) await fadeOut();
 });
 audio.addEventListener("play", () => {
   clearInterval(fadeInInterval);

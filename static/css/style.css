@@ -22,6 +22,7 @@
 
 html::-webkit-scrollbar {
     display: none;
+    scroll-behavior: smooth;
 }
 
 html {
@@ -40,9 +41,20 @@ body {
     padding: 20px;
 }
 
+.back-button-container {
+    left: 20px;
+    position: fixed;
+    text-shadow: -2px 2px 0 var(--secondary-color);
+    top: 20px;
+    z-index: 9999;
+}
+
 .back-button {
     align-items: center;
+    background-color: var(--background-3-color);
     border-radius: 50%;
+    box-shadow: -8px 8px 0 var(--background-0-color);
+    color: var(--primary-color);
     cursor: pointer;
     display: flex;
     font-family: sans-serif;
@@ -55,6 +67,12 @@ body {
     color 0.2s ease-in-out,
     text-shadow 0.2s ease-in-out,
     transform 0.1s ease-in-out;
+}
+
+.back-button:hover {
+    background-color: var(--primary-color);
+    text-shadow: 0 0 0 var(--secondary-color);
+    transform: scale(1.02) translate(1px, -1px);
 }
 
 .volume-slider-container {

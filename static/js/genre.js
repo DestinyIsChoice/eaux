@@ -8,6 +8,10 @@ const list = document.getElementById("list");
 const source = document.getElementById("source");
 const volumeSlider = document.getElementById("volume-slider");
 let albumsResponse = null;
+let currentScrollOffset = 0;
+let fadeInInterval = null;
+let isMoving = false;
+let targetScrollOffset = 0;
 let volume = 1;
 
 function reloadlessSubmit(form, value, event) {
@@ -26,6 +30,18 @@ function reloadlessSubmit(form, value, event) {
       }
     })
     .catch(error => console.error("Error submitting song:", error));
+}
+
+function smoothAnimateScroll() {
+  currentScrollOffset += (targetScrollOffset - currentScrollOffset) * 0.15;
+  const duration = parseFloat(carousel.style.animationDuration);
+  if (duration) carousel.style.animationDelay = `${-((currentScrollOffset % duration + duration) % duration)}s`;
+  if (Math.abs(targetScrollOffset - currentScrollOffset) > 0.001) {
+    requestAnimationFrame(smoothAnimateScroll);
+  } else {
+    currentScrollOffset = targetScrollOffset;
+    isMoving = false;
+  }
 }
 
 function updateCarouselSizing() {
@@ -157,55 +173,31 @@ document.addEventListener("DOMContentLoaded", () => {
   const carouselContainer = document.getElementById("carousel-container");
   const songForm = document.getElementById("song-form");
   const songTrigger = document.querySelector(".song-form-dropdown-trigger");
-  let currentScrollOffset = 0;
-  let isMoving = false;
-  let targetScrollOffset = 0;
-
-  function smoothAnimateScroll() {
-    currentScrollOffset += (targetScrollOffset - currentScrollOffset) * 0.15;
-    const duration = parseFloat(carousel.style.animationDuration);
-    if (duration) carousel.style.animationDelay = `${-((currentScrollOffset % duration + duration) % duration)}s`;
-    if (Math.abs(targetScrollOffset - currentScrollOffset) > 0.001) {
-      requestAnimationFrame(smoothAnimateScroll);
-    } else {
-      currentScrollOffset = targetScrollOffset;
-      isMoving = false;
-    }
-  }
-
-  if (carouselContainer) {
-    carouselContainer.addEventListener("wheel", (event) => {
-      if (carousel.style.animation && carousel.style.animation !== "none") {
-        event.preventDefault();
-        targetScrollOffset += event.deltaY * 0.01;
-        if (!isMoving) {
-          isMoving = true;
-          requestAnimationFrame(smoothAnimateScroll);
-        }
+  carouselContainer.addEventListener("wheel", (event) => {
+    if (carousel.style.animation && carousel.style.animation !== "none") {
+      event.preventDefault();
+      targetScrollOffset += event.deltaY * 0.01;
+      if (!isMoving) {
+        isMoving = true;
+        requestAnimationFrame(smoothAnimateScroll);
       }
-    }, {passive: false});
-  }
-  if (songTrigger && songForm) {
-    songTrigger.addEventListener("click", (event) => {
-      event.stopPropagation();
-      if (carouselContainer) carouselContainer.classList.remove("form-active");
-      songForm.classList.toggle("show");
-    });
-  }
-  if (albumTrigger && carouselContainer && albumForm) {
-    albumTrigger.addEventListener("click", (event) => {
-      event.stopPropagation();
-      if (songForm) songForm.classList.remove("show");
-      carouselContainer.classList.toggle("form-active");
-    });
-  }
+    }
+  }, {passive: false});
+  songTrigger.addEventListener("click", (event) => {
+    event.stopPropagation();
+    if (carouselContainer) carouselContainer.classList.remove("form-active");
+    songForm.classList.toggle("show");
+  });
+  albumTrigger.addEventListener("click", (event) => {
+    event.stopPropagation();
+    if (songForm) songForm.classList.remove("show");
+    carouselContainer.classList.toggle("form-active");
+  });
   document.addEventListener("click", (event) => {
-    if (songForm
-      && songForm.classList.contains("show")
+    if (songForm.classList.contains("show")
       && !songForm.contains(event.target)
       && event.target !== songTrigger) songForm.classList.remove("show");
-    if (carouselContainer
-      && carouselContainer.classList.contains("form-active")
+    if (carouselContainer.classList.contains("form-active")
       && !carouselContainer.contains(event.target)
       && event.target !== albumTrigger) {
       carouselContainer.classList.remove("form-active");
@@ -218,15 +210,37 @@ document.addEventListener("DOMContentLoaded", () => {
   albumForm.addEventListener("submit", (event) => {
     reloadlessSubmit(albumForm, "album-submit", event);
   });
-});
-if (volumeSlider && audio) {
-  volumeSlider.addEventListener("input", (event) => {
-    const val = event.target.value;
-    volume = Math.pow(val / 100, 2);
-    audio.volume = volume;
-    volumeSlider.style.setProperty("--slider-progress", `${val}%`);
+  audio.addEventListener("timeupdate", async () => {
+    if (!audio.duration) return;
+    if (audio.duration - audio.currentTime <= 0.2) {
+      while (audio.volume > 0.25 && audio.duration - audio.currentTime > 0.05) {
+        audio.volume -= 0.25;
+        await new Promise(resolve => setTimeout(resolve, 50));
+      }
+      audio.volume = 0;
+    }
   });
-}
+  audio.addEventListener("play", () => {
+    clearInterval(fadeInInterval);
+    audio.volume = 0;
+    fadeInInterval = setInterval(() => {
+      if (audio.volume < volume - 0.05) {
+        audio.volume += 0.05;
+      } else {
+        audio.volume = volume;
+        clearInterval(fadeInInterval);
+      }
+    }, 50);
+  });
+  if (volumeSlider && audio) {
+    volumeSlider.addEventListener("input", (event) => {
+      const val = event.target.value;
+      volume = Math.pow(val / 100, 2);
+      audio.volume = volume;
+      volumeSlider.style.setProperty("--slider-progress", `${val}%`);
+    });
+  }
+});
 updateContent();
 window.addEventListener("resize", updateCarouselSizing);
 if (window.history.replaceState) window.history.replaceState(null, null, window.location.href);
