@@ -7,12 +7,28 @@ const genre = document.getElementById("genre").dataset.genre;
 const list = document.getElementById("list");
 const source = document.getElementById("source");
 const volumeSlider = document.getElementById("volume-slider");
+const webWorker = new Worker(new URL("web-worker.js", import.meta.url));
 let albumsResponse = null;
 let currentScrollOffset = 0;
 let fadeInInterval = null;
 let isMoving = false;
+let lastTime = 0;
 let targetScrollOffset = 0;
 let volume = 1;
+let wakeLock = null;
+
+async function acquireWakeLock() {
+  if ("wakeLock" in navigator) wakeLock = await navigator.wakeLock.request("screen");
+}
+
+function releaseWakeLock() {
+  if (wakeLock !== null) {
+    wakeLock.release()
+      .then(() => {
+        wakeLock = null;
+      });
+  }
+}
 
 function reloadlessSubmit(form, value, event) {
   const formData = new FormData(form);
@@ -29,7 +45,6 @@ function reloadlessSubmit(form, value, event) {
         updateContent();
       }
     })
-    .catch(error => console.error("Error submitting song:", error));
 }
 
 function smoothAnimateScroll() {
@@ -130,6 +145,77 @@ function updateContent() {
       list.innerHTML = newHTML;
       void list.offsetHeight;
       list.style.height = `${targetHeight}px`;
+      if ("mediaSession" in navigator) {
+        new Promise(resolve => {
+          const originalImage = new Image();
+          originalImage.onload = () => {
+            resolve([originalImage.naturalWidth, originalImage.naturalHeight]);
+          };
+
+          // noinspection JSUnresolvedVariable
+          originalImage.src = data.queue[0].thumbnail;
+        }).then(dimensions => {
+          new Promise((resolve) => {
+            const croppedImage = new Image();
+            croppedImage.crossOrigin = "anonymous";
+            croppedImage.onload = () => {
+              const canvas = document.createElement("canvas");
+              canvas.width = dimensions[1];
+              canvas.height = dimensions[1];
+              canvas.getContext("2d").drawImage(
+                croppedImage,
+                (dimensions[0] - dimensions[1]) / 2,
+                0,
+                dimensions[1],
+                dimensions[1],
+                0,
+                0,
+                dimensions[1],
+                dimensions[1]
+              );
+              resolve(canvas.toDataURL("image/png"));
+            };
+
+            // noinspection JSUnresolvedVariable
+            croppedImage.src = data.queue[0].thumbnail;
+          }).then(imageURL => {
+
+            // noinspection JSCheckFunctionSignatures, JSUnresolvedVariable
+            navigator.mediaSession.metadata = new MediaMetadata({
+              title: data.queue[0].song_name.toLowerCase(),
+              artist: data.queue[0].artist_name.toLowerCase(),
+              artwork: [
+                {src: imageURL, sizes: "96x96", type: "image/png"},
+                {src: imageURL, sizes: "512x512", type: "image/png"}
+              ]
+            });
+          });
+        })
+        navigator.mediaSession.setActionHandler("play", () => {
+          fetch(`/${genre}/queue`)
+            .then((response) => response.json())
+            .then((data) => {
+              audio.currentTime = data.queue[0].timestamp;
+            });
+          audio.play();
+        });
+        navigator.mediaSession.setActionHandler("pause", async () => {
+          while (audio.volume > 0.25) {
+            audio.volume -= 0.25;
+            await new Promise(resolve => setTimeout(resolve, 50));
+          }
+          audio.pause();
+        });
+        navigator.mediaSession.setActionHandler("seekbackward", () => {
+          audio.currentTime = lastTime;
+        });
+        navigator.mediaSession.setActionHandler("seekforward", () => {
+          audio.currentTime = lastTime;
+        });
+        navigator.mediaSession.setActionHandler("seekto", () => {
+          audio.currentTime = lastTime;
+        });
+      }
     });
   fetch(`/${genre}/albums`)
     .then((response) => response.json())
@@ -167,12 +253,31 @@ function updateContent() {
     });
 }
 
+webWorker.onmessage = function(event) {
+  if (event.data === "tick") updateContent();
+};
+webWorker.postMessage("start");
+document.addEventListener("visibilitychange", async () => {
+  webWorker.postMessage("start");
+  if (wakeLock !== null && document.visibilityState === "visible") {
+    await acquireWakeLock();
+  }
+});
 document.addEventListener("DOMContentLoaded", () => {
   const albumForm = document.getElementById("album-form");
   const albumTrigger = document.querySelector(".album-form-dropdown-trigger");
   const carouselContainer = document.getElementById("carousel-container");
   const songForm = document.getElementById("song-form");
   const songTrigger = document.querySelector(".song-form-dropdown-trigger");
+
+  function validateForm(inputClass, submitClass) {
+    let incomplete = false;
+    document.querySelectorAll(inputClass).forEach(input => {
+      if (input.value === "") incomplete = true;
+    });
+    document.querySelector(submitClass).disabled = incomplete;
+  }
+
   carouselContainer.addEventListener("wheel", (event) => {
     if (carousel.style.animation && carousel.style.animation !== "none") {
       event.preventDefault();
@@ -183,16 +288,6 @@ document.addEventListener("DOMContentLoaded", () => {
       }
     }
   }, {passive: false});
-  songTrigger.addEventListener("click", (event) => {
-    event.stopPropagation();
-    if (carouselContainer) carouselContainer.classList.remove("form-active");
-    songForm.classList.toggle("show");
-  });
-  albumTrigger.addEventListener("click", (event) => {
-    event.stopPropagation();
-    if (songForm) songForm.classList.remove("show");
-    carouselContainer.classList.toggle("form-active");
-  });
   document.addEventListener("click", (event) => {
     if (songForm.classList.contains("show")
       && !songForm.contains(event.target)
@@ -204,23 +299,32 @@ document.addEventListener("DOMContentLoaded", () => {
       setTimeout(updateCarouselSizing, 200);
     }
   });
+  songTrigger.addEventListener("click", (event) => {
+    event.stopPropagation();
+    if (carouselContainer) carouselContainer.classList.remove("form-active");
+    songForm.classList.toggle("show");
+  });
+  document.querySelectorAll(".song-input").forEach(input => {
+    input.addEventListener("input", () => validateForm(".song-input", ".song-submit"));
+  });
   songForm.addEventListener("submit", (event) => {
     reloadlessSubmit(songForm, "song-submit", event);
+    document.querySelector(".song-submit").disabled = true;
+  });
+  albumTrigger.addEventListener("click", (event) => {
+    event.stopPropagation();
+    if (songForm) songForm.classList.remove("show");
+    carouselContainer.classList.toggle("form-active");
+  });
+  document.querySelectorAll(".album-input").forEach(input => {
+    input.addEventListener("input", () => validateForm(".album-input", ".album-submit"));
   });
   albumForm.addEventListener("submit", (event) => {
     reloadlessSubmit(albumForm, "album-submit", event);
+    document.querySelector(".album-submit").disabled = true;
   });
-  audio.addEventListener("timeupdate", async () => {
-    if (!audio.duration) return;
-    if (audio.duration - audio.currentTime <= 0.2) {
-      while (audio.volume > 0.25 && audio.duration - audio.currentTime > 0.05) {
-        audio.volume -= 0.25;
-        await new Promise(resolve => setTimeout(resolve, 50));
-      }
-      audio.volume = 0;
-    }
-  });
-  audio.addEventListener("play", () => {
+  audio.addEventListener("play", async () => {
+    await acquireWakeLock();
     clearInterval(fadeInInterval);
     audio.volume = 0;
     fadeInInterval = setInterval(() => {
@@ -231,6 +335,20 @@ document.addEventListener("DOMContentLoaded", () => {
         clearInterval(fadeInInterval);
       }
     }, 50);
+  });
+  audio.addEventListener("timeupdate", async () => {
+    if (!audio.duration) return;
+    if (audio.duration - audio.currentTime <= 0.2) {
+      while (audio.volume > 0.25 && audio.duration - audio.currentTime > 0.05) {
+        audio.volume -= 0.25;
+        await new Promise(resolve => setTimeout(resolve, 50));
+      }
+      audio.volume = 0;
+    }
+    lastTime = audio.currentTime;
+  });
+  audio.addEventListener("ended", async () => {
+    releaseWakeLock();
   });
   if (volumeSlider && audio) {
     volumeSlider.addEventListener("input", (event) => {
@@ -244,4 +362,3 @@ document.addEventListener("DOMContentLoaded", () => {
 updateContent();
 window.addEventListener("resize", updateCarouselSizing);
 if (window.history.replaceState) window.history.replaceState(null, null, window.location.href);
-setInterval(updateContent, 1000);

@@ -157,14 +157,20 @@ button[name=song-submit], button[name=album-submit] {
     transform 0.1s ease-in-out;
 }
 
-button[name=song-submit]:hover, button[name=album-submit]:hover {
+button[name=song-submit]:disabled, button[name=album-submit]:disabled {
+    background-color: var(--background-2-color);
+    color: var(--background-0-color);
+    text-shadow: var(--background-1-color);
+}
+
+button[name=song-submit]:not(:disabled):hover, button[name=album-submit]:not(:disabled):hover {
     background-color: var(--primary-color);
     color: var(--background-4-color);
     text-shadow: 0 0 0 var(--secondary-color);
     transform: scale(1.02) translate(1px, -1px);
 }
 
-button[name=song-submit]:active, button[name=album-submit]:active {
+button[name=song-submit]:not(:disabled):active, button[name=album-submit]:not(:disabled):active {
     transform: scale(0.98) translate(-1px, 1px);
 }
 

@@ -124,6 +124,7 @@ def generic_genre(genre):
                             "url": url,
                             "length": length,
                             "timestamp": 0,
+                            "thumbnail": song.thumbnail_url,
                             "colors": get_distinct_palette(io.BytesIO(
                                 urllib.request.urlopen(
                                     song.thumbnail_url).read()))
@@ -206,7 +207,7 @@ def generic_genre(genre):
                         gather_song_info_loop.close()
                     thumbnails = album.get("thumbnails")
 
-                    # noinspection PyTypeChecker
+                    # noinspection PyTypeChecker, PyUnresolvedReferences
                     albums[genre][album_name] = {
                         "artist_name": artist_name,
                         "songs": [((song.get("title").lower()
@@ -214,6 +215,9 @@ def generic_genre(genre):
                                     "unavailable"), songs_info[i][0],
                                    songs_info[i][1])
                                   for i, song in enumerate(album["entries"])],
+                        "thumbnail": search_song(album["entries"][0].get("title"),
+                                                 artist_name, 0)
+                        .thumbnail_url,
                         "colors": get_distinct_palette(io.BytesIO(
                             urllib.request.urlopen(
                                 thumbnails[0]["url"]).read()))
@@ -342,7 +346,7 @@ def index():
 
 # noinspection PyUnusedLocal
 @app.errorhandler(404)
-def page_not_found(e):
+def page_not_found(error):
     return flask.render_template("404.html"), 404
 
 
@@ -371,9 +375,10 @@ if __name__ == "__main__":
 
     # noinspection PyTypeChecker
     update_seconds = int(UPDATE_SECONDS)
-    app.config["BASIC_AUTH_PASSWORD"] = auth_password
-    app.config["BASIC_AUTH_USERNAME"] = auth_username
-    flask_basicauth.BasicAuth(app)
+    if os.getenv("USE_AUTH") == "true":
+        app.config["BASIC_AUTH_PASSWORD"] = auth_password
+        app.config["BASIC_AUTH_USERNAME"] = auth_username
+        flask_basicauth.BasicAuth(app)
 
     # noinspection PyUnresolvedReferences
     generate_genres(GENRES.split(","))
@@ -383,6 +388,6 @@ if __name__ == "__main__":
     tick_duration_thread.start()
     waitress.serve(CustomTransLogger(app),
                    host="0.0.0.0",
-                   port=80,
+                   port=8080,
                    connection_limit=500,
                    threads=50)
