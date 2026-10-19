@@ -12,10 +12,10 @@ let albumData = {
     songs: [""]
   }
 };
-let artist = null;
 let cover = null;
 let fadeInInterval = null;
 let index = 0;
+let transitioning = false;
 let volume = 1;
 let wakeLock = null;
 
@@ -44,30 +44,38 @@ function setMediaSession() {
       {src: cover, sizes: "512x512", type: "image/jpeg"}
     ]
   });
-  if (index !== albumData.albums[album].songs.length - 1) {
-    navigator.mediaSession.setActionHandler("nexttrack", async () => {
+  navigator.mediaSession.setActionHandler("nexttrack", async () => {
+    if (transitioning) return;
+    if (index < albumData.albums[album].songs.length - 1) {
+      transitioning = true;
+      audio.pause();
       await fadeOut();
+      audio.currentTime = 0;
       index++;
       await updateAudio();
-    });
-  } else {
-    navigator.mediaSession.setActionHandler("nexttrack", null);
-  }
-  if (index !== 0) {
-    navigator.mediaSession.setActionHandler("previoustrack", async () => {
+      navigator.mediaSession.playbackState = "playing";
+      transitioning = false;
+    }
+  });
+
+  navigator.mediaSession.setActionHandler("previoustrack", async () => {
+    if (transitioning) return;
+
+    if (index > 0) {
+      transitioning = true;
+      audio.pause();
       await fadeOut();
+      audio.currentTime = 0;
       index--;
       await updateAudio();
-    });
-  } else {
-    navigator.mediaSession.setActionHandler("previoustrack", null);
-  }
+      navigator.mediaSession.playbackState = "playing";
+      transitioning = false;
+    }
+  });
 }
 
 async function updateAudio() {
-  if ("mediaSession" in navigator && albumData.albums[album]) {
-    setMediaSession();
-  }
+  if ("mediaSession" in navigator && albumData.albums[album]) setMediaSession();
 
   async function validateAudio() {
     const newUrl = albumData.albums[album].songs[index][1];
@@ -110,11 +118,21 @@ audio.addEventListener("play", async () => {
   }, 50);
 });
 audio.addEventListener("timeupdate", async () => {
-  if (!audio.duration) return;
-  if (audio.duration - audio.currentTime <= 0.2) await fadeOut();
+  if (!audio.duration || transitioning) return;
+  if (audio.duration - audio.currentTime <= 1) {
+    transitioning = true;
+    await fadeOut();
+    audio.currentTime = 0;
+    index++;
+    if (index < albumData.albums[album].songs.length) {
+      await updateAudio();
+    } else {
+      releaseWakeLock();
+    }
+    transitioning = false;
+  }
 });
 audio.addEventListener("ended", async () => {
-  index++;
   if (index < albumData.albums[album].songs.length) {
     await updateAudio();
   } else {
@@ -144,6 +162,7 @@ listContainer.addEventListener("click", async (event) => {
   const button = event.target.closest(".song-button");
   if (button) {
     await fadeOut();
+    audio.currentTime = 0;
     index = allButtons.indexOf(button);
     await updateAudio();
   }
@@ -191,22 +210,23 @@ fetch(`albums`)
         const height = image.naturalHeight;
         if (!width || !height) return;
         const canvas = document.createElement("canvas");
-
-        // noinspection JSSuspiciousNameCombination
-        canvas.width = height;
-        canvas.height = height;
-        canvas.getContext("2d").drawImage(image, (width - height) / 2, 0, height, height, 0, 0, height, height);
+        canvas.width = 512;
+        canvas.height = 512;
+        const size = Math.min(width, height);
+        const startX = (width - size) / 2;
+        const startY = (height - size) / 2;
+        canvas.getContext("2d").drawImage(
+          image,
+          startX, startY, size, size,
+          0, 0, 512, 512
+        );
         try {
           cover = canvas.toDataURL("image/jpeg");
         } catch (error) {
-
-          // noinspection JSUnresolvedVariable
           cover = data.albums[album].thumbnail;
         }
         setMediaSession();
       };
-
-      // noinspection JSUnresolvedVariable
       image.src = data.albums[album].thumbnail;
       navigator.mediaSession.setActionHandler("play", () => {
         audio.play();

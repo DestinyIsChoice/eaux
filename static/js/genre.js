@@ -14,11 +14,20 @@ let fadeInInterval = null;
 let isMoving = false;
 let lastTime = 0;
 let targetScrollOffset = 0;
+let transitioning = false;
 let volume = 1;
 let wakeLock = null;
 
 async function acquireWakeLock() {
   if ("wakeLock" in navigator) wakeLock = await navigator.wakeLock.request("screen");
+}
+
+async function fadeOut() {
+  while (audio.volume > 0.25) {
+    audio.volume -= 0.25;
+    await new Promise(resolve => setTimeout(resolve, 50));
+  }
+  audio.volume = 0;
 }
 
 function releaseWakeLock() {
@@ -154,30 +163,30 @@ function updateContent() {
 
           // noinspection JSUnresolvedVariable
           originalImage.src = data.queue[0].thumbnail;
-        }).then(dimensions => {
+        }).then(() => {
           new Promise((resolve) => {
-            const croppedImage = new Image();
-            croppedImage.crossOrigin = "anonymous";
-            croppedImage.onload = () => {
+            const image = new Image();
+            image.crossOrigin = "anonymous";
+            image.onload = () => {
+              const width = image.naturalWidth;
+              const height = image.naturalHeight;
+              if (!width || !height) return;
               const canvas = document.createElement("canvas");
-              canvas.width = dimensions[1];
-              canvas.height = dimensions[1];
+              canvas.width = 512;
+              canvas.height = 512;
+              const size = Math.min(width, height);
+              const startX = (width - size) / 2;
+              const startY = (height - size) / 2;
               canvas.getContext("2d").drawImage(
-                croppedImage,
-                (dimensions[0] - dimensions[1]) / 2,
-                0,
-                dimensions[1],
-                dimensions[1],
-                0,
-                0,
-                dimensions[1],
-                dimensions[1]
+                image,
+                startX, startY, size, size,
+                0, 0, 512, 512
               );
               resolve(canvas.toDataURL("image/png"));
             };
 
             // noinspection JSUnresolvedVariable
-            croppedImage.src = data.queue[0].thumbnail;
+            image.src = data.queue[0].thumbnail;
           }).then(imageURL => {
 
             // noinspection JSCheckFunctionSignatures, JSUnresolvedVariable
@@ -200,10 +209,7 @@ function updateContent() {
           audio.play();
         });
         navigator.mediaSession.setActionHandler("pause", async () => {
-          while (audio.volume > 0.25) {
-            audio.volume -= 0.25;
-            await new Promise(resolve => setTimeout(resolve, 50));
-          }
+          await fadeOut();
           audio.pause();
         });
         navigator.mediaSession.setActionHandler("seekbackward", () => {
@@ -323,33 +329,6 @@ document.addEventListener("DOMContentLoaded", () => {
     reloadlessSubmit(albumForm, "album-submit", event);
     document.querySelector(".album-submit").disabled = true;
   });
-  audio.addEventListener("play", async () => {
-    await acquireWakeLock();
-    clearInterval(fadeInInterval);
-    audio.volume = 0;
-    fadeInInterval = setInterval(() => {
-      if (audio.volume < volume - 0.05) {
-        audio.volume += 0.05;
-      } else {
-        audio.volume = volume;
-        clearInterval(fadeInInterval);
-      }
-    }, 50);
-  });
-  audio.addEventListener("timeupdate", async () => {
-    if (!audio.duration) return;
-    if (audio.duration - audio.currentTime <= 0.2) {
-      while (audio.volume > 0.25 && audio.duration - audio.currentTime > 0.05) {
-        audio.volume -= 0.25;
-        await new Promise(resolve => setTimeout(resolve, 50));
-      }
-      audio.volume = 0;
-    }
-    lastTime = audio.currentTime;
-  });
-  audio.addEventListener("ended", async () => {
-    releaseWakeLock();
-  });
   if (volumeSlider && audio) {
     volumeSlider.addEventListener("input", (event) => {
       const val = event.target.value;
@@ -358,6 +337,43 @@ document.addEventListener("DOMContentLoaded", () => {
       volumeSlider.style.setProperty("--slider-progress", `${val}%`);
     });
   }
+});
+
+audio.addEventListener("play", async () => {
+  await acquireWakeLock();
+  if ("mediaSession" in navigator) updateContent();
+  clearInterval(fadeInInterval);
+  if (document.visibilityState !== "visible") {
+    audio.volume = volume;
+    return;
+  }
+  audio.volume = 0;
+  fadeInInterval = setInterval(() => {
+    if (audio.volume < volume - 0.05) {
+      audio.volume += 0.05;
+    } else {
+      audio.volume = volume;
+      clearInterval(fadeInInterval);
+    }
+  }, 50);
+});
+audio.addEventListener("timeupdate", async () => {
+  if (!audio.duration || transitioning) return;
+  if (audio.duration - audio.currentTime <= 1) {
+    transitioning = true;
+    await fadeOut();
+    audio.currentTime = 0;
+    updateContent();
+    transitioning = false;
+  }
+  lastTime = audio.currentTime;
+});
+audio.addEventListener("ended", async () => {
+  if (transitioning) return;
+  transitioning = true;
+  audio.currentTime = 0;
+  updateContent();
+  transitioning = false;
 });
 updateContent();
 window.addEventListener("resize", updateCarouselSizing);
