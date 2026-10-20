@@ -39,21 +39,23 @@ function releaseWakeLock() {
   }
 }
 
-function reloadlessSubmit(form, value, event) {
+function reloadlessSubmit(form, value, event, validator) {
   const formData = new FormData(form);
   event.preventDefault();
   formData.append(value, "clicked");
-  fetch(window.location.href, {
-    method: "POST",
-    body: formData
-  })
-    .then(response => {
-      if (response.ok) {
-        form.reset();
-        form.classList.remove("show");
-        updateContent();
-      }
+  if (validator()) {
+    fetch(window.location.href, {
+      method: "POST",
+      body: formData
     })
+      .then(response => {
+        if (response.ok) {
+          form.reset();
+          form.classList.remove("show");
+          updateContent();
+        }
+      });
+  }
 }
 
 function smoothAnimateScroll() {
@@ -293,7 +295,7 @@ document.addEventListener("DOMContentLoaded", () => {
         requestAnimationFrame(smoothAnimateScroll);
       }
     }
-  }, {passive: false});
+  }, { passive: false });
   document.addEventListener("click", (event) => {
     if (songForm.classList.contains("show")
       && !songForm.contains(event.target)
@@ -312,9 +314,26 @@ document.addEventListener("DOMContentLoaded", () => {
   });
   document.querySelectorAll(".song-input").forEach(input => {
     input.addEventListener("input", () => validateForm(".song-input", ".song-submit"));
+    document.querySelector(".song-submit").textContent = "submit a song";
   });
   songForm.addEventListener("submit", (event) => {
-    reloadlessSubmit(songForm, "song-submit", event);
+    const formData = new FormData(songForm);
+    reloadlessSubmit(songForm, "song-submit", event, () => {
+      fetch(`/${genre}/queue`)
+        .then((response) => response.json())
+        .then((data) => {
+          if (data.queue.length >= document.getElementById("max").dataset.max) {
+            document.querySelector(".song-submit").textContent = `${data.queue.length} songs already in queue!`;
+            return false;
+          }
+          if (data.queue.filter(song => song.song_name.toLowerCase() === formData.get("song-search").toLowerCase())
+            .map(song => song.artist_name.toLowerCase()).includes(formData.get("artist-search").toLowerCase())) {
+            document.querySelector(".song-submit").textContent = `song already in queue!`;
+            return false;
+          }
+          return true;
+        });
+    });
     document.querySelector(".song-submit").disabled = true;
   });
   albumTrigger.addEventListener("click", (event) => {
@@ -323,10 +342,24 @@ document.addEventListener("DOMContentLoaded", () => {
     carouselContainer.classList.toggle("form-active");
   });
   document.querySelectorAll(".album-input").forEach(input => {
-    input.addEventListener("input", () => validateForm(".album-input", ".album-submit"));
+    input.addEventListener("input", () => {
+      validateForm(".album-input", ".album-submit");
+      document.querySelector(".album-submit").textContent = "submit";
+    });
   });
   albumForm.addEventListener("submit", (event) => {
-    reloadlessSubmit(albumForm, "album-submit", event);
+    const formData = new FormData(albumForm);
+    reloadlessSubmit(albumForm, "album-submit", event, () => {
+      fetch(`/${genre}/albums`)
+        .then((response) => response.json())
+        .then((data) => {
+          if (Object.keys(data.albums).map(album => album.toLowerCase()).includes(formData.get("album-search").toLowerCase())) {
+            document.querySelector(".album-submit").textContent = `album already suggested!`;
+            return false;
+          }
+          return true;
+        });
+    });
     document.querySelector(".album-submit").disabled = true;
   });
   if (volumeSlider && audio) {

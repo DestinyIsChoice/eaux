@@ -253,6 +253,7 @@ def generic_genre(genre):
                                      albums=albums[genre],
                                      artists=[data["artist_name"] for _, data
                                               in albums[genre].items()],
+                                     max=int(os.getenv("QUEUE_MAX")),
                                      dev_mode=IS_DEV)
     else:
         return flask.render_template("force-post.html", dev_mode=IS_DEV)
