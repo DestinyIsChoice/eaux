@@ -16,11 +16,37 @@ let cover = null;
 let fadeInInterval = null;
 let index = 0;
 let transitioning = false;
+let urlCache = {};
 let volume = 1;
 let wakeLock = null;
 
 async function acquireWakeLock() {
   if ("wakeLock" in navigator) wakeLock = await navigator.wakeLock.request("screen");
+}
+
+async function prefetchTrackUrls() {
+  const nextIndex = index + 1;
+  if (nextIndex >= albumData.albums[album].songs.length) return;
+  const nextResponse = await fetch(`/${genre}/${album}/regenerate`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ "song_index": nextIndex })
+  });
+  const nextData = await nextResponse.json();
+  if (nextData.url) {
+    urlCache[nextIndex] = nextData.url;
+  }
+  const previousIndex = index - 1;
+  if (previousIndex < 0) return;
+  const previousResponse = await fetch(`/${genre}/${album}/regenerate`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ "song_index": previousIndex })
+  });
+  const previousData = await previousResponse.json();
+  if (previousData.url) {
+    urlCache[previousIndex] = previousData.url;
+  }
 }
 
 function releaseWakeLock() {
@@ -60,7 +86,6 @@ function setMediaSession() {
 
   navigator.mediaSession.setActionHandler("previoustrack", async () => {
     if (transitioning) return;
-
     if (index > 0) {
       transitioning = true;
       audio.pause();
@@ -76,23 +101,24 @@ function setMediaSession() {
 
 async function updateAudio() {
   if ("mediaSession" in navigator && albumData.albums[album]) setMediaSession();
-
   async function validateAudio() {
-    const newUrl = albumData.albums[album].songs[index][1];
+    const newUrl = urlCache[index] || albumData.albums[album].songs[index][1];
     if (newUrl === "") return false;
     allButtons.forEach(button => button.classList.remove("active"));
-    allButtons[index].classList.add("active");
+    if (allButtons[index]) allButtons[index].classList.add("active");
     source.src = newUrl;
     audio.load();
-    audio.play();
+    audio.play().catch(err => console.log("Playback interrupted:", err));
+    await prefetchTrackUrls();
     return true;
   }
-
   while (index < albumData.albums[album].songs.length) {
     if (await validateAudio()) break;
     index++;
   }
-  if (index === albumData.albums[album].songs.length) allButtons.forEach(button => button.classList.remove("active"));
+  if (index === albumData.albums[album].songs.length) {
+    allButtons.forEach(button => button.classList.remove("active"));
+  }
 }
 
 async function fadeOut() {
@@ -104,6 +130,7 @@ async function fadeOut() {
 }
 
 audio.addEventListener("play", async () => {
+  if ("mediaSession" in navigator) navigator.mediaSession.playbackState = "playing";
   await acquireWakeLock();
   setMediaSession();
   clearInterval(fadeInInterval);
@@ -116,6 +143,9 @@ audio.addEventListener("play", async () => {
       clearInterval(fadeInInterval);
     }
   }, 50);
+});
+audio.addEventListener("pause", () => {
+  if ("mediaSession" in navigator) navigator.mediaSession.playbackState = "paused";
 });
 audio.addEventListener("timeupdate", async () => {
   if (!audio.duration || transitioning) return;
@@ -133,11 +163,18 @@ audio.addEventListener("timeupdate", async () => {
   }
 });
 audio.addEventListener("ended", async () => {
+  if (transitioning) return;
+  transitioning = true;
+  index++;
   if (index < albumData.albums[album].songs.length) {
     await updateAudio();
   } else {
     releaseWakeLock();
+
+    // noinspection JSTypeChecking
+    if ("mediaSession" in navigator) navigator.mediaSession.playbackState = "paused";
   }
+  transitioning = false;
 });
 source.addEventListener("error", async () => {
   fetch(`/${genre}/${album}/regenerate`, {
@@ -223,10 +260,14 @@ fetch(`albums`)
         try {
           cover = canvas.toDataURL("image/jpeg");
         } catch (error) {
+
+          // noinspection JSUnresolvedVariable
           cover = data.albums[album].thumbnail;
         }
         setMediaSession();
       };
+
+      // noinspection JSUnresolvedVariable
       image.src = data.albums[album].thumbnail;
       navigator.mediaSession.setActionHandler("play", () => {
         audio.play();

@@ -81,7 +81,7 @@ function updateCarouselSizing() {
   originals.forEach((slide) => {
     totalOriginalsWidth += slide.getBoundingClientRect().width + 16;
   });
-  if (totalOriginalsWidth + 40 <= containerWidth) {
+  if (totalOriginalsWidth + 140 <= containerWidth) {
     carousel.style.animation = "none";
     carousel.style.width = "100%";
     carousel.style.justifyContent = "center";
@@ -318,8 +318,8 @@ document.addEventListener("DOMContentLoaded", () => {
   });
   songForm.addEventListener("submit", (event) => {
     const formData = new FormData(songForm);
-    reloadlessSubmit(songForm, "song-submit", event, () => {
-      fetch(`/${genre}/queue`)
+    reloadlessSubmit(songForm, "song-submit", event, async () => {
+      await fetch(`/${genre}/queue`)
         .then((response) => response.json())
         .then((data) => {
           if (data.queue.length >= document.getElementById("max").dataset.max) {
@@ -349,8 +349,8 @@ document.addEventListener("DOMContentLoaded", () => {
   });
   albumForm.addEventListener("submit", (event) => {
     const formData = new FormData(albumForm);
-    reloadlessSubmit(albumForm, "album-submit", event, () => {
-      fetch(`/${genre}/albums`)
+    reloadlessSubmit(albumForm, "album-submit", event, async () => {
+      await fetch(`/${genre}/albums`)
         .then((response) => response.json())
         .then((data) => {
           if (Object.keys(data.albums).map(album => album.toLowerCase()).includes(formData.get("album-search").toLowerCase())) {
