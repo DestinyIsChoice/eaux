@@ -368,12 +368,24 @@ document.addEventListener("DOMContentLoaded", () => {
 
 audio.addEventListener("play", async () => {
   clearInterval(fadeInInterval);
-  if (wakeLock === null && document.visibilityState === "visible") await acquireWakeLock();
+  if (document.visibilityState === "visible") {
+    audio.volume = 0;
+    if (wakeLock === null) await acquireWakeLock();
+    fadeInInterval = setInterval(() => {
+      if (audio.volume < volume - 0.05) {
+        audio.volume += 0.05;
+      } else {
+        audio.volume = volume;
+        clearInterval(fadeInInterval);
+      }
+    }, 50);
+  } else {
+    audio.volume = 1;
+  }
   if ("mediaSession" in navigator) {
     updateContent();
     navigator.mediaSession.playbackState = "playing";
   }
-  audio.volume = 1;
 });
 audio.addEventListener("timeupdate", async () => {
   lastTime = audio.currentTime;
