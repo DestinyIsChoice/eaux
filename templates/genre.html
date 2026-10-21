@@ -27,12 +27,16 @@
     {% endif %}
 </head>
 <body>
-<div class="back-button-container">
-    <a href="/" class="back-button">
-        <i class="fa-solid fa-house home-icon"></i>
-    </a>
+<div class="top-nav-container">
+    <div class="back-button-container">
+        <a href="/" class="back-button">
+            <i class="fa-solid fa-house home-icon"></i>
+        </a>
+    </div>
+
+    <!-- This element displays the text in the top right -->
+    <div id="genre" data-genre="{{ genre }}">{{ genre }}</div>
 </div>
-<div id="genre" data-genre="{{ genre }}"></div>
 <div id="max" data-max="{{ max }}"></div>
 <audio id="audio" autoplay controls hidden>
     <source
@@ -56,6 +60,8 @@
                 name="song-search"
                 placeholder="song"
                 spellcheck="false"
+                autocapitalize="none"
+                autocomplete="off"
         >
     </label>
     <label>
@@ -64,6 +70,8 @@
                 name="artist-search"
                 placeholder="artist"
                 spellcheck="false"
+                autocapitalize="none"
+                autocomplete="off"
         >
     </label>
     <button
@@ -107,6 +115,8 @@
                     name="album-search"
                     placeholder="album"
                     spellcheck="false"
+                    autocapitalize="none"
+                    autocomplete="off"
             >
         </label>
         <label>
@@ -115,6 +125,8 @@
                     name="artist-search"
                     placeholder="artist"
                     spellcheck="false"
+                    autocapitalize="none"
+                    autocomplete="off"
             >
         </label>
         <button

@@ -30,34 +30,6 @@ async function fadeOut() {
   audio.volume = 0;
 }
 
-function releaseWakeLock() {
-  if (wakeLock !== null) {
-    wakeLock.release()
-      .then(() => {
-        wakeLock = null;
-      });
-  }
-}
-
-function reloadlessSubmit(form, value, event, validator) {
-  const formData = new FormData(form);
-  event.preventDefault();
-  formData.append(value, "clicked");
-  if (validator()) {
-    fetch(window.location.href, {
-      method: "POST",
-      body: formData
-    })
-      .then(response => {
-        if (response.ok) {
-          form.reset();
-          form.classList.remove("show");
-          updateContent();
-        }
-      });
-  }
-}
-
 function smoothAnimateScroll() {
   currentScrollOffset += (targetScrollOffset - currentScrollOffset) * 0.15;
   const duration = parseFloat(carousel.style.animationDuration);
@@ -104,7 +76,7 @@ function updateCarouselSizing() {
 function updateContent() {
   fetch(`/${genre}/queue`)
     .then((response) => response.json())
-    .then((data) => {
+    .then(async (data) => {
       const newUrl = data.queue.length !== 0
         ? `${data.queue[0].url}#t=${data.queue[0].timestamp}`
         : "";
@@ -209,10 +181,12 @@ function updateContent() {
               audio.currentTime = data.queue[0].timestamp;
             });
           audio.play();
+          navigator.mediaSession.playbackState = "playing";
         });
         navigator.mediaSession.setActionHandler("pause", async () => {
-          await fadeOut();
+          if (wakeLock === null && document.visibilityState === "visible") await fadeOut();
           audio.pause();
+          navigator.mediaSession.playbackState = "paused";
         });
         navigator.mediaSession.setActionHandler("seekbackward", () => {
           audio.currentTime = lastTime;
@@ -254,22 +228,38 @@ function updateContent() {
           }
         }
         albumsResponse = data;
-        updateCarouselSizing();
         carouselContainer.classList.remove("container-fading");
         updateCarouselSizing();
       }, 300);
     });
 }
 
-webWorker.onmessage = function(event) {
+async function reloadlessSubmit(form, value, event, validator) {
+  const formData = new FormData(form);
+  event.preventDefault();
+  formData.append(value, "clicked");
+  if (await validator()) {
+    fetch(window.location.href, {
+      method: "POST",
+      body: formData
+    })
+      .then(response => {
+        if (response.ok) {
+          form.reset();
+          form.classList.remove("show");
+          updateContent();
+        }
+      });
+  }
+}
+
+
+webWorker.onmessage = function (event) {
   if (event.data === "tick") updateContent();
 };
-webWorker.postMessage("start");
 document.addEventListener("visibilitychange", async () => {
   webWorker.postMessage("start");
-  if (wakeLock !== null && document.visibilityState === "visible") {
-    await acquireWakeLock();
-  }
+  if (wakeLock === null && document.visibilityState === "visible") await acquireWakeLock();
 });
 document.addEventListener("DOMContentLoaded", () => {
   const albumForm = document.getElementById("album-form");
@@ -283,6 +273,7 @@ document.addEventListener("DOMContentLoaded", () => {
     document.querySelectorAll(inputClass).forEach(input => {
       if (input.value === "") incomplete = true;
     });
+    document.querySelector(submitClass).textContent = "submit a song";
     document.querySelector(submitClass).disabled = incomplete;
   }
 
@@ -295,7 +286,7 @@ document.addEventListener("DOMContentLoaded", () => {
         requestAnimationFrame(smoothAnimateScroll);
       }
     }
-  }, { passive: false });
+  }, {passive: false});
   document.addEventListener("click", (event) => {
     if (songForm.classList.contains("show")
       && !songForm.contains(event.target)
@@ -314,25 +305,27 @@ document.addEventListener("DOMContentLoaded", () => {
   });
   document.querySelectorAll(".song-input").forEach(input => {
     input.addEventListener("input", () => validateForm(".song-input", ".song-submit"));
-    document.querySelector(".song-submit").textContent = "submit a song";
   });
   songForm.addEventListener("submit", (event) => {
     const formData = new FormData(songForm);
+
+    // noinspection JSIgnoredPromiseFromCall
     reloadlessSubmit(songForm, "song-submit", event, async () => {
-      await fetch(`/${genre}/queue`)
-        .then((response) => response.json())
-        .then((data) => {
-          if (data.queue.length >= document.getElementById("max").dataset.max) {
-            document.querySelector(".song-submit").textContent = `${data.queue.length} songs already in queue!`;
-            return false;
-          }
-          if (data.queue.filter(song => song.song_name.toLowerCase() === formData.get("song-search").toLowerCase())
-            .map(song => song.artist_name.toLowerCase()).includes(formData.get("artist-search").toLowerCase())) {
-            document.querySelector(".song-submit").textContent = `song already in queue!`;
-            return false;
-          }
-          return true;
-        });
+      const data = await (await fetch(`/${genre}/queue`)).json();
+      if (data.queue.length >= document.getElementById("max").dataset.max) {
+        document.querySelector(".song-submit").textContent = `${data.queue.length} songs already in queue!`;
+        return false;
+      }
+
+      // noinspection JSUnresolvedVariable
+      if (data.queue.some(song =>
+        song.song_name.toLowerCase() === formData.get("song-search").toLowerCase() &&
+        song.artist_name.toLowerCase() === formData.get("artist-search").toLowerCase()
+      )) {
+        document.querySelector(".song-submit").textContent = `song already in queue!`;
+        return false;
+      }
+      return true;
     });
     document.querySelector(".song-submit").disabled = true;
   });
@@ -349,17 +342,18 @@ document.addEventListener("DOMContentLoaded", () => {
   });
   albumForm.addEventListener("submit", (event) => {
     const formData = new FormData(albumForm);
+
+    // noinspection JSIgnoredPromiseFromCall
     reloadlessSubmit(albumForm, "album-submit", event, async () => {
-      await fetch(`/${genre}/albums`)
-        .then((response) => response.json())
-        .then((data) => {
-          if (Object.keys(data.albums).map(album => album.toLowerCase()).includes(formData.get("album-search").toLowerCase())) {
-            document.querySelector(".album-submit").textContent = `album already suggested!`;
-            return false;
-          }
-          return true;
-        });
+      if (Object.keys((await (await fetch(`/${genre}/albums`)).json()).albums)
+        .map(album => album.toLowerCase())
+        .includes(formData.get("album-search").toLowerCase())) {
+        document.querySelector(".album-submit").textContent = `album already suggested!`;
+        return false;
+      }
+      return true;
     });
+
     document.querySelector(".album-submit").disabled = true;
   });
   if (volumeSlider && audio) {
@@ -373,32 +367,15 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 
 audio.addEventListener("play", async () => {
-  await acquireWakeLock();
-  if ("mediaSession" in navigator) updateContent();
   clearInterval(fadeInInterval);
-  if (document.visibilityState !== "visible") {
-    audio.volume = volume;
-    return;
+  if (wakeLock === null && document.visibilityState === "visible") await acquireWakeLock();
+  if ("mediaSession" in navigator) {
+    updateContent();
+    navigator.mediaSession.playbackState = "playing";
   }
-  audio.volume = 0;
-  fadeInInterval = setInterval(() => {
-    if (audio.volume < volume - 0.05) {
-      audio.volume += 0.05;
-    } else {
-      audio.volume = volume;
-      clearInterval(fadeInInterval);
-    }
-  }, 50);
+  audio.volume = 1;
 });
 audio.addEventListener("timeupdate", async () => {
-  if (!audio.duration || transitioning) return;
-  if (audio.duration - audio.currentTime <= 1) {
-    transitioning = true;
-    await fadeOut();
-    audio.currentTime = 0;
-    updateContent();
-    transitioning = false;
-  }
   lastTime = audio.currentTime;
 });
 audio.addEventListener("ended", async () => {
@@ -407,7 +384,9 @@ audio.addEventListener("ended", async () => {
   audio.currentTime = 0;
   updateContent();
   transitioning = false;
+  if ("mediaSession" in navigator) navigator.mediaSession.playbackState = "paused";
 });
 updateContent();
 window.addEventListener("resize", updateCarouselSizing);
 if (window.history.replaceState) window.history.replaceState(null, null, window.location.href);
+webWorker.postMessage("start");

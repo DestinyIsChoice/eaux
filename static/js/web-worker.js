@@ -1,5 +1,5 @@
 let timerId = null;
-self.onmessage = function(event) {
+self.onmessage = function (event) {
   if (event.data === "start") {
     if (!timerId) {
       timerId = setInterval(() => {

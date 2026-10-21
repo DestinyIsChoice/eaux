@@ -144,9 +144,9 @@ body {
     box-shadow: -8px 8px 0 var(--background-0-color);
     cursor: pointer;
     height: 32px;
-    width: 32px;
     margin-top: -9px;
     position: relative;
+    width: 32px;
     z-index: 3;
     transition: background-color 0.2s ease-in-out,
     box-shadow 0.2s ease-in-out,
@@ -164,12 +164,14 @@ body {
 
 .volume-slider::-moz-range-thumb {
     background-color: var(--background-3-color);
+    border: none;
     border-radius: 6px;
     box-shadow: -8px 8px 0 var(--background-0-color);
     cursor: pointer;
     height: 32px;
-    width: 32px;
+    outline: none;
     position: relative;
+    width: 32px;
     z-index: 3;
     transition: background-color 0.2s ease-in-out,
     box-shadow 0.2s ease-in-out,
