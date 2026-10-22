@@ -182,7 +182,7 @@ body {
 @media (pointer: coarse) {
     html {
         zoom: 2;
-        -moz-transform: scale(2);
+        -moz-transform: scale(1.5);
         -moz-transform-origin: 0 0;
     }
 
