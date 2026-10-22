@@ -64,7 +64,7 @@ function updateCarouselSizing() {
       + (parseFloat(window.getComputedStyle(carouselDivider).marginRight) || 0);
   }
   if (totalOriginalsWidth + 140 <=
-  (window.matchMedia("(pointer: coarse)").matches ? containerWidth / 2 : containerWidth)) {
+    (window.matchMedia("(pointer: coarse)").matches ? containerWidth / 2 : containerWidth)) {
     carousel.style.animation = "none";
     carousel.style.width = "100%";
     carousel.style.justifyContent = "center";
@@ -139,7 +139,7 @@ function updateContent() {
       list.innerHTML = newHTML;
       void list.offsetHeight;
       list.style.height = `${targetHeight}px`;
-      if ("mediaSession" in navigator) {
+      if ("mediaSession" in navigator && data.queue.length !== 0) {
         new Promise(resolve => {
           const originalImage = new Image();
           originalImage.onload = () => {
@@ -353,10 +353,28 @@ document.addEventListener("DOMContentLoaded", () => {
     const submitButton = document.querySelector(".song-submit");
     if (submitButton) submitButton.disabled = true;
     const formData = new FormData(songForm);
-    const submittedSongName = formData.get("song-search").toLowerCase();
     const submittedArtistName = formData.get("artist-search").toLowerCase();
+    const submittedSongName = formData.get("song-search").toLowerCase();
+
     async function validateAndQueue() {
       const data = await (await fetch(`/${genre}/queue`)).json();
+      const lastUserSong = JSON.parse(localStorage.getItem(`last_submitted_song_${genre}`));
+      if (lastUserSong) {
+
+        // noinspection JSUnresolvedVariable
+        if (data.queue.some(song =>
+          song.song_name.toLowerCase() === lastUserSong.song.toLowerCase() &&
+          song.artist_name.toLowerCase() === lastUserSong.artist.toLowerCase()
+        )) {
+          submitButton.textContent = "you have another song in queue!";
+          submitButton.disabled = true;
+          return false;
+        }
+      }
+      localStorage.setItem(`last_submitted_song_${genre}`, JSON.stringify({
+        song: submittedSongName,
+        artist: submittedArtistName
+      }));
       if (data.queue.length >= document.getElementById("max").dataset.max) {
         submitButton.textContent = `${data.queue.length} songs already in queue!`;
         submitButton.disabled = true;
@@ -372,28 +390,9 @@ document.addEventListener("DOMContentLoaded", () => {
         submitButton.disabled = true;
         return false;
       }
-      const lastUserSong = JSON.parse(localStorage.getItem("last_submitted_song"));
-      if (lastUserSong) {
-
-        // noinspection JSUnresolvedVariable
-        const isStillInQueue = data.queue.some(song =>
-          song.song_name.toLowerCase() === lastUserSong.song.toLowerCase() &&
-          song.artist_name.toLowerCase() === lastUserSong.artist.toLowerCase() &&
-          genre === lastUserSong.genre
-        );
-        if (isStillInQueue) {
-          submitButton.textContent = "you have another song in queue!";
-          submitButton.disabled = true;
-          return false;
-        }
-      }
-      localStorage.setItem("last_submitted_song", JSON.stringify({
-        song: submittedSongName,
-        artist: submittedArtistName,
-        genre: genre
-      }));
       return true;
     }
+
     await reloadlessSubmit(songForm, "song-submit", event, validateAndQueue);
   });
   albumForm.addEventListener("submit", (event) => {
@@ -411,7 +410,7 @@ document.addEventListener("DOMContentLoaded", () => {
       if (Object.keys((await (await fetch(`/${genre}/albums`)).json()).albums)
         .map(album => album.toLowerCase())
         .includes(new FormData(albumForm).get("album-search").toLowerCase())) {
-        document.querySelector(".album-submit").textContent = `album already suggested!`;
+        document.querySelector(".album-submit").textContent = `album already submitted!`;
         return false;
       }
       localStorage.setItem(`last_album_submission_date_${genre}`, today);
