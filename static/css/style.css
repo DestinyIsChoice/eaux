@@ -41,14 +41,6 @@ body {
     padding: 20px;
 }
 
-.back-button-container {
-    left: 20px;
-    position: fixed;
-    text-shadow: -2px 2px 0 var(--secondary-color);
-    top: 20px;
-    z-index: 9999;
-}
-
 .back-button {
     align-items: center;
     background-color: var(--background-3-color);

@@ -25,10 +25,12 @@ body {
 }
 
 .back-button-container {
-    left: 24px;
+    left: 20px;
     pointer-events: auto;
-    position: absolute;
-    top: 24px;
+    position: fixed;
+    text-shadow: -2px 2px 0 var(--secondary-color);
+    top: 20px;
+    z-index: 9999;
 }
 
 #genre {
