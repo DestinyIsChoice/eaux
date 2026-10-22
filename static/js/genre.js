@@ -17,6 +17,8 @@ let targetScrollOffset = 0;
 let transitioning = false;
 let volume = 1;
 let wakeLock = null;
+let startX = 0;
+let isTouching = false;
 
 async function acquireWakeLock() {
   if ("wakeLock" in navigator) wakeLock = await navigator.wakeLock.request("screen");
@@ -48,12 +50,21 @@ function updateCarouselSizing() {
   const originals = Array.from(carousel.querySelectorAll(".album-button.original-slide"));
   const allButtons = [...originals, ...duplicates];
   if (originals.length === 0) return;
+
   allButtons.forEach(slide => slide.style.width = "auto");
   let totalOriginalsWidth = 0;
   originals.forEach((slide) => {
-    totalOriginalsWidth += slide.getBoundingClientRect().width + 16;
+    totalOriginalsWidth += slide.offsetWidth
+      + (parseFloat(window.getComputedStyle(slide).marginLeft) || 0)
+      + (parseFloat(window.getComputedStyle(slide).marginRight) || 0);
   });
-  if (totalOriginalsWidth + 140 <= containerWidth) {
+  if (carouselDivider) {
+    totalOriginalsWidth += carouselDivider.offsetWidth
+      + (parseFloat(window.getComputedStyle(carouselDivider).marginLeft) || 0)
+      + (parseFloat(window.getComputedStyle(carouselDivider).marginRight) || 0);
+  }
+  if (totalOriginalsWidth + 140 <=
+  (window.matchMedia("(pointer: coarse)").matches ? containerWidth / 2 : containerWidth)) {
     carousel.style.animation = "none";
     carousel.style.width = "100%";
     carousel.style.justifyContent = "center";
@@ -253,7 +264,6 @@ async function reloadlessSubmit(form, value, event, validator) {
   }
 }
 
-
 webWorker.onmessage = function (event) {
   if (event.data === "tick") updateContent();
 };
@@ -273,7 +283,7 @@ document.addEventListener("DOMContentLoaded", () => {
     document.querySelectorAll(inputClass).forEach(input => {
       if (input.value === "") incomplete = true;
     });
-    document.querySelector(submitClass).textContent = "submit a song";
+    document.querySelector(submitClass).textContent = "submit";
     document.querySelector(submitClass).disabled = incomplete;
   }
 
@@ -287,6 +297,27 @@ document.addEventListener("DOMContentLoaded", () => {
       }
     }
   }, {passive: false});
+  carouselContainer.addEventListener("touchstart", (event) => {
+    if (carousel.style.animation && carousel.style.animation !== "none") {
+      isTouching = true;
+      startX = event.touches[0].clientX;
+    }
+  }, {passive: true});
+  carouselContainer.addEventListener("touchmove", (event) => {
+    if (!isTouching || !carousel.style.animation || carousel.style.animation === "none") return;
+    const currentX = event.touches[0].clientX;
+    const deltaX = startX - currentX;
+    startX = currentX;
+    if (event.cancelable) event.preventDefault();
+    targetScrollOffset += deltaX * 0.005;
+    if (!isMoving) {
+      isMoving = true;
+      requestAnimationFrame(smoothAnimateScroll);
+    }
+  }, {passive: false});
+  carouselContainer.addEventListener("touchend", () => {
+    isTouching = false;
+  }, {passive: true});
   document.addEventListener("click", (event) => {
     if (songForm.classList.contains("show")
       && !songForm.contains(event.target)
@@ -306,29 +337,6 @@ document.addEventListener("DOMContentLoaded", () => {
   document.querySelectorAll(".song-input").forEach(input => {
     input.addEventListener("input", () => validateForm(".song-input", ".song-submit"));
   });
-  songForm.addEventListener("submit", (event) => {
-    const formData = new FormData(songForm);
-
-    // noinspection JSIgnoredPromiseFromCall
-    reloadlessSubmit(songForm, "song-submit", event, async () => {
-      const data = await (await fetch(`/${genre}/queue`)).json();
-      if (data.queue.length >= document.getElementById("max").dataset.max) {
-        document.querySelector(".song-submit").textContent = `${data.queue.length} songs already in queue!`;
-        return false;
-      }
-
-      // noinspection JSUnresolvedVariable
-      if (data.queue.some(song =>
-        song.song_name.toLowerCase() === formData.get("song-search").toLowerCase() &&
-        song.artist_name.toLowerCase() === formData.get("artist-search").toLowerCase()
-      )) {
-        document.querySelector(".song-submit").textContent = `song already in queue!`;
-        return false;
-      }
-      return true;
-    });
-    document.querySelector(".song-submit").disabled = true;
-  });
   albumTrigger.addEventListener("click", (event) => {
     event.stopPropagation();
     if (songForm) songForm.classList.remove("show");
@@ -340,32 +348,86 @@ document.addEventListener("DOMContentLoaded", () => {
       document.querySelector(".album-submit").textContent = "submit";
     });
   });
+  songForm.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    const submitButton = document.querySelector(".song-submit");
+    if (submitButton) submitButton.disabled = true;
+    const formData = new FormData(songForm);
+    const submittedSongName = formData.get("song-search").toLowerCase();
+    const submittedArtistName = formData.get("artist-search").toLowerCase();
+    async function validateAndQueue() {
+      const data = await (await fetch(`/${genre}/queue`)).json();
+      if (data.queue.length >= document.getElementById("max").dataset.max) {
+        submitButton.textContent = `${data.queue.length} songs already in queue!`;
+        submitButton.disabled = true;
+        return false;
+      }
+
+      // noinspection JSUnresolvedVariable
+      if (data.queue.some(song =>
+        song.song_name.toLowerCase() === submittedSongName &&
+        song.artist_name.toLowerCase() === submittedArtistName
+      )) {
+        submitButton.textContent = "song already in queue!";
+        submitButton.disabled = true;
+        return false;
+      }
+      const lastUserSong = JSON.parse(localStorage.getItem("last_submitted_song"));
+      if (lastUserSong) {
+
+        // noinspection JSUnresolvedVariable
+        const isStillInQueue = data.queue.some(song =>
+          song.song_name.toLowerCase() === lastUserSong.song.toLowerCase() &&
+          song.artist_name.toLowerCase() === lastUserSong.artist.toLowerCase() &&
+          genre === lastUserSong.genre
+        );
+        if (isStillInQueue) {
+          submitButton.textContent = "you have another song in queue!";
+          submitButton.disabled = true;
+          return false;
+        }
+      }
+      localStorage.setItem("last_submitted_song", JSON.stringify({
+        song: submittedSongName,
+        artist: submittedArtistName,
+        genre: genre
+      }));
+      return true;
+    }
+    await reloadlessSubmit(songForm, "song-submit", event, validateAndQueue);
+  });
   albumForm.addEventListener("submit", (event) => {
-    const formData = new FormData(albumForm);
+    const today = new Date().toISOString().split("T")[0];
+    if (localStorage.getItem(`last_album_submission_date_${genre}`) === today) {
+      event.preventDefault();
+      const submitButton = document.querySelector(".album-submit");
+      submitButton.textContent = "already submitted an album today!";
+      submitButton.disabled = true;
+      return;
+    }
 
     // noinspection JSIgnoredPromiseFromCall
     reloadlessSubmit(albumForm, "album-submit", event, async () => {
       if (Object.keys((await (await fetch(`/${genre}/albums`)).json()).albums)
         .map(album => album.toLowerCase())
-        .includes(formData.get("album-search").toLowerCase())) {
+        .includes(new FormData(albumForm).get("album-search").toLowerCase())) {
         document.querySelector(".album-submit").textContent = `album already suggested!`;
         return false;
       }
+      localStorage.setItem(`last_album_submission_date_${genre}`, today);
       return true;
     });
-
     document.querySelector(".album-submit").disabled = true;
   });
-  if (volumeSlider && audio) {
-    volumeSlider.addEventListener("input", (event) => {
-      const val = event.target.value;
-      volume = Math.pow(val / 100, 2);
-      audio.volume = volume;
-      volumeSlider.style.setProperty("--slider-progress", `${val}%`);
-    });
-  }
 });
-
+if (volumeSlider && audio) {
+  volumeSlider.addEventListener("input", (event) => {
+    const val = event.target.value;
+    volume = Math.pow(val / 100, 3);
+    audio.volume = volume;
+    volumeSlider.style.setProperty("--slider-progress", `${val}%`);
+  });
+}
 audio.addEventListener("play", async () => {
   clearInterval(fadeInInterval);
   if (document.visibilityState === "visible") {

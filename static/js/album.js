@@ -177,7 +177,7 @@ listContainer.addEventListener("click", async (event) => {
 });
 volumeSlider.addEventListener("input", (event) => {
   const val = event.target.value;
-  volume = Math.pow(val / 100, 2);
+  volume = Math.pow(val / 100, 3);
   audio.volume = volume;
   volumeSlider.style.setProperty("--slider-progress", `${val}%`);
 });
