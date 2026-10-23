@@ -13,6 +13,7 @@ import colorthief
 import dotenv
 import flask
 import flask_basicauth
+import musicbrainzngs
 import paste.translogger
 import py_yt
 import pytubefix
@@ -33,8 +34,10 @@ UPDATE_SECONDS = os.getenv("UPDATE_SECONDS")
 app = flask.Flask(__name__)
 auth_password = os.getenv("AUTH_PASSWORD")
 auth_username = os.getenv("AUTH_USERNAME")
+album_infos = {}
 albums = {}
 queues = {}
+song_infos = {}
 
 
 def tick_queue(update):
@@ -81,22 +84,68 @@ def search_song(song, artist, result_index):
         return song_search.results[0]
 
 
+def get_album(album_name, artist_name):
+    try:
+        release = musicbrainzngs.search_releases(
+            query=f"artist:\"{artist_name}\" "
+                  f"AND release:\"{album_name}\"",
+            limit=5)['release-list'][0]
+        return (release.get("title", "unknown"),
+                ", ".join([credit.get("artist", {}).get("name", artist_name)
+                           for credit in release.get("artist-credit", [{}])]),
+                release["id"])
+    except (musicbrainzngs.MusicBrainzError, IndexError):
+        return None
+
+
+def get_album_tracklist(release_id):
+    try:
+        return [
+            track.get("recording", {}).get("title", "unknown")
+            for medium in
+            musicbrainzngs.get_release_by_id(
+                release_id, includes=["recordings"])
+            .get("release", {})["medium-list"]
+            for track in medium.get("track-list", [])
+        ]
+    except musicbrainzngs.MusicBrainzError:
+        return None
+
+
+def get_song(song_name, artist_name):
+    try:
+        result = musicbrainzngs.search_recordings(
+            query=f"artist:\"{artist_name}\" AND recording:\"{song_name}\"",
+            limit=5)
+        return (result['recording-list'][0].get("title", "unknown"),
+                ", ".join([credit.get("artist", {}).get("name", artist_name)
+                           for credit in result["recording-list"][0]
+                          .get("artist-credit", [{}])]))
+    except (musicbrainzngs.MusicBrainzError, IndexError):
+        return None
+
+
 def generic_genre(genre):
     if flask.request.method == "POST":
-        if flask.request.form.get("initial-load") != "true":
+        if flask.request.form["initial-load"] != "true":
             if "song-search" in flask.request.form:
+                song_input = flask.request.form["song-search"]
+                validated_info = song_infos.get(song_input)
+                if not validated_info:
+                    validated_info = (song_input,
+                                      flask.request.form["artist-search"])
+
                 for i in range(5):
                     try:
-                        artist_name = flask.request.form["artist-search"]
-                        song_name = flask.request.form["song-search"]
-                        song = search_song(song_name, artist_name, 0)
+                        song = search_song(validated_info[0],
+                                           validated_info[1],
+                                           0)
 
                         # noinspection PyTypeChecker, PyUnresolvedReferences
                         url = (yt_dlp.YoutubeDL({
                             "format": "bestaudio/best",
                             "quiet": True}
-                        ).extract_info(song.watch_url, download=False)
-                               .get("url"))
+                        ).extract_info(song.watch_url, download=False)["url"])
                         while True:
                             try:
 
@@ -119,8 +168,8 @@ def generic_genre(genre):
 
                         # noinspection PyUnresolvedReferences
                         queues[genre].append({
-                            "song_name": song_name,
-                            "artist_name": artist_name,
+                            "song_name": song_infos[song_input][0],
+                            "artist_name": song_infos[song_input][1],
                             "url": url,
                             "length": length,
                             "timestamp": 0,
@@ -136,13 +185,12 @@ def generic_genre(genre):
                         break
             else:
                 try:
-                    album_name = flask.request.form["album-search"]
-                    artist_name = flask.request.form["artist-search"]
-
-                    # noinspection PyUnusedLocal
-                    songs_info = []
-
-                    # noinspection PyTypeChecker
+                    album_input = flask.request.form["album-search"]
+                    if (album_input not in album_infos
+                            or album_infos[album_input] is None):
+                        return flask.render_template("genre.html",
+                                                     genre=genre,
+                                                     albums=albums[genre])
                     album = yt_dlp.YoutubeDL({
                         "extract_flat": True,
                         "skip_download": True,
@@ -150,43 +198,39 @@ def generic_genre(genre):
                         "no_warnings": True
                     }).extract_info((f"https://youtube.com/playlist?list="
                                      f"{asyncio.run(py_yt.PlaylistsSearch(
-                                         f"{album_name} by {artist_name} "
+                                         f"{album_infos[album_input][0]} "
+                                         f"by {album_infos[album_input][1]} "
                                          f"Provided to YouTube by",
                                          limit=1).next())
                                          ["result"][0]["id"]}"),
                                     download=False)
 
                     async def extract_song_info(album_song):
-                        song_url = album_song.get("url")
+                        song_url = album_song["url"]
                         streaming_url = ""
                         if not song_url:
                             return "", ""
                         try:
-
-                            # noinspection PyTypeChecker
                             streaming_url = (await asyncio.to_thread(
                                 lambda: yt_dlp.YoutubeDL(
                                     {"format": "bestaudio/best",
                                      "quiet": True}).extract_info(
                                     song_url, download=False))).get("url", "")
                         except yt_dlp.utils.YoutubeDLError:
-                            if not album_song.get("title"):
+                            if not album_song["title"]:
                                 return "", song_url
                             for search_index in range(5):
                                 try:
-
-                                    # noinspection PyUnresolvedReferences
                                     song_url = search_song(
-                                        album_song.get("title"),
-                                        artist_name,
+                                        album_song["title"],
+                                        album_infos[album_input][1],
                                         search_index).watch_url
-
-                                    # noinspection PyTypeChecker
                                     streaming_url = ((await asyncio.to_thread(
                                         lambda: yt_dlp.YoutubeDL(
                                             {"format": "bestaudio/best",
-                                             "quiet": True}).extract_info(
-                                            song_url, download=False)))
+                                             "quiet": True})
+                                        .extract_info(song_url,
+                                                      download=False)))
                                                      .get("url", ""))
                                     break
                                 except yt_dlp.utils.YoutubeDLError:
@@ -205,42 +249,43 @@ def generic_genre(genre):
                             gather_song_info())
                     finally:
                         gather_song_info_loop.close()
-                    thumbnails = album.get("thumbnails")
 
                     # noinspection PyTypeChecker, PyUnresolvedReferences
-                    albums[genre][album_name] = {
-                        "artist_name": artist_name,
-                        "songs": [((song.get("title").lower()
-                                    if song.get("title") else
-                                    "unavailable"), songs_info[i][0],
+                    albums[genre][album_infos[album_input][0]] = {
+                        "artist_name": album_infos[album_input][1],
+                        "songs": [(get_album_tracklist(
+                            album_infos[album_input][2])[i],
+                                   songs_info[i][0],
                                    songs_info[i][1])
                                   for i, song in enumerate(album["entries"])],
-                        "thumbnail": search_song(album["entries"][0].get("title"),
-                                                 artist_name, 0)
+                        "thumbnail": search_song(album["entries"][0]["title"],
+                                                 album_infos[album_input][1],
+                                                 0)
                         .thumbnail_url,
                         "colors": get_distinct_palette(io.BytesIO(
                             urllib.request.urlopen(
-                                thumbnails[0]["url"]).read()))
-                        if thumbnails else
+                                album["thumbnails"][0]["url"]).read()))
+                        if album["thumbnails"] else
                         ([202, 158, 230], [35, 38, 52], [35, 38, 52])
                     }
-                    album_endpoint_name = f"{genre}_{album_name}"
+                    album_endpoint_name = (f"{genre}_"
+                                           f"{album_infos[album_input][0]}")
                     app._got_first_request = False
                     app.add_url_rule(
-                        f"/{genre}/{album_name}",
+                        f"/{genre}/{album_infos[album_input][0]}",
                         endpoint=album_endpoint_name,
                         defaults={"genre": genre,
-                                  "album": album_name},
+                                  "album": album_infos[album_input][0]},
                         methods=["GET", "POST"]
                     )
                     app.view_functions[album_endpoint_name] = generic_album
-                    regenerate_endpoint_name = (f"{genre}_{album_name}"
-                                                f"_regenerate")
+                    regenerate_endpoint_name = f"{genre}_{album_infos[
+                        album_input][0]}_regenerate"
                     app.add_url_rule(
-                        f"/{genre}/{album_name}/regenerate",
+                        f"/{genre}/{album_infos[album_input][0]}/regenerate",
                         endpoint=regenerate_endpoint_name,
                         defaults={"genre": genre,
-                                  "album": album_name},
+                                  "album": album_infos[album_input][0]},
                         methods=["POST"]
                     )
                     app.view_functions[
@@ -282,13 +327,13 @@ def generic_album_regenerate(genre, album):
         "quiet": True}
     ).extract_info(
         albums[genre][album]["songs"]
-        [flask.request.get_json().get("song_index")][2],
-        download=False).get("url")
+        [flask.request.get_json()["song_index"]][2],
+        download=False)["url"]
     song_info = list(albums[genre][album]["songs"]
-                     [flask.request.get_json().get("song_index")])
+                     [flask.request.get_json()["song_index"]])
     song_info[1] = new_url
     (albums[genre][album]["songs"]
-        [flask.request.get_json().get("song_index")]) = song_info
+     [flask.request.get_json()["song_index"]]) = song_info
     return flask.jsonify({"url": [new_url]})
 
 
@@ -345,6 +390,22 @@ def index():
                                  genres=queues)
 
 
+@app.route("/validate-album", methods=["POST"])
+def validate_album():
+    album_infos[flask.request.json["album"]] = get_album(
+        flask.request.json["album"], flask.request.json["artist"])
+    return flask.jsonify(
+        {"album": album_infos[flask.request.json["album"]]})
+
+
+@app.route("/validate-song", methods=["POST"])
+def validate_song():
+    song_infos[flask.request.json["song"]] = get_song(
+        flask.request.json["song"], flask.request.json["artist"])
+    return flask.jsonify(
+        {"song": song_infos[flask.request.json["song"]]})
+
+
 # noinspection PyUnusedLocal
 @app.errorhandler(404)
 def page_not_found(error):
@@ -357,7 +418,7 @@ class CustomTransLogger:
             _app, setup_console_handler=setup_console_handler)
 
     def __call__(self, environ, start_response):
-        if environ.get("REQUEST_METHOD") == "GET":
+        if environ["REQUEST_METHOD"] == "GET":
             return self.logger_app.application(environ, start_response)
         return self.logger_app(environ, start_response)
 
@@ -380,6 +441,7 @@ if __name__ == "__main__":
         app.config["BASIC_AUTH_PASSWORD"] = auth_password
         app.config["BASIC_AUTH_USERNAME"] = auth_username
         flask_basicauth.BasicAuth(app)
+    musicbrainzngs.set_useragent("eaux", "1.0", "eaux.servehttp.com")
 
     # noinspection PyUnresolvedReferences
     generate_genres(GENRES.split(","))
