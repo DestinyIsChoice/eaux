@@ -1,4 +1,5 @@
 import asyncio
+import datetime
 import io
 import itertools
 import json
@@ -41,12 +42,22 @@ song_infos = {}
 
 
 def tick_queue(update):
+    global albums
+
     while True:
         for genre in queues:
             if queues[genre]:
                 queues[genre][0]["timestamp"] += update
                 if queues[genre][0]["timestamp"] > queues[genre][0]["length"]:
                     queues[genre].pop(0)
+        now = datetime.datetime.now()
+        if (abs((now - datetime.datetime.combine(
+                now.date(), datetime.time.min)).total_seconds()) <= 1
+                or abs((datetime.datetime.combine(
+                        now.date() + datetime.timedelta(
+                            days=1), datetime.time.min) - now)
+                       .total_seconds()) <= 1):
+            albums = {}
         time.sleep(update)
 
 
