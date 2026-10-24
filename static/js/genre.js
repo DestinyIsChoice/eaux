@@ -370,7 +370,6 @@ document.addEventListener("DOMContentLoaded", () => {
     const submittedSongName = formData.get("song-search").toLowerCase();
     reloadlessSubmit(songForm, "song-submit", event, async () => {
       const queue_data = await (await fetch(`/${genre}/queue`)).json();
-      const lastUserSong = JSON.parse(localStorage.getItem(`last_submitted_song_${genre}`));
       const data = await (await fetch("/validate-song", {
         method: "POST",
         headers: {"Content-Type": "application/json"},
@@ -425,7 +424,6 @@ document.addEventListener("DOMContentLoaded", () => {
       document.querySelector(".album-submit").disabled = true;
       return false;
     }
-
     fetch("/validate-album", {
       method: "POST",
       headers: {"Content-Type": "application/json"},

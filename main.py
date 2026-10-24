@@ -265,7 +265,7 @@ def generic_genre(genre):
                     albums[genre][album_infos[album_input][0]] = {
                         "artist_name": album_infos[album_input][1],
                         "songs": [(get_album_tracklist(
-                            album_infos[album_input][2])[i],
+                            album_infos[album_input][2])[i].lower(),
                                    songs_info[i][0],
                                    songs_info[i][1])
                                   for i, song in enumerate(album["entries"])],
