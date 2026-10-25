@@ -366,6 +366,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const submitButton = document.querySelector(".song-submit");
     if (submitButton) submitButton.disabled = true;
     const formData = new FormData(songForm);
+    const lastUserSong = JSON.parse(localStorage.getItem(`last_submitted_song_${genre}`));
     const submittedArtistName = formData.get("artist-search").toLowerCase();
     const submittedSongName = formData.get("song-search").toLowerCase();
     reloadlessSubmit(songForm, "song-submit", event, async () => {
@@ -419,9 +420,9 @@ document.addEventListener("DOMContentLoaded", () => {
     event.preventDefault();
     const formData = new FormData(albumForm);
     const today = new Date().toISOString().split("T")[0];
+    document.querySelector(".album-submit").disabled = true;
     if (localStorage.getItem(`last_album_submission_date_${genre}`) === today) {
       showPopup("cannot submit album", "already submitted an album today!");
-      document.querySelector(".album-submit").disabled = true;
       return false;
     }
     fetch("/validate-album", {
@@ -436,7 +437,6 @@ document.addEventListener("DOMContentLoaded", () => {
       .then((data) => {
         if (data.album === null) {
           showPopup("cannot submit album", "cannot find album!");
-          document.querySelector(".album-submit").disabled = true;
           return false;
         }
         reloadlessSubmit(albumForm, "album-submit", event, async () => {

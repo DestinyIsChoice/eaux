@@ -1,10 +1,12 @@
 import asyncio
 import datetime
+import difflib
 import io
 import itertools
 import json
 import math
 import os
+import re
 import subprocess
 import threading
 import time
@@ -51,13 +53,9 @@ def tick_queue(update):
                 if queues[genre][0]["timestamp"] > queues[genre][0]["length"]:
                     queues[genre].pop(0)
         now = datetime.datetime.now()
-        if (abs((now - datetime.datetime.combine(
-                now.date(), datetime.time.min)).total_seconds()) <= 1
-                or abs((datetime.datetime.combine(
-                        now.date() + datetime.timedelta(
-                            days=1), datetime.time.min) - now)
-                       .total_seconds()) <= 1):
-            albums = {}
+        if abs((now - datetime.datetime.combine(now.date(), datetime.time(
+                0, 0))).total_seconds()) <= 1:
+            albums = {key: {} for key in albums}
         time.sleep(update)
 
 
@@ -89,10 +87,13 @@ def search_song(song, artist, result_index):
     if not song_search.results:
         song_search = pytubefix.Search(
             f"{song} by {artist}")
-    if song_search.results[result_index]:
+    try:
         return song_search.results[result_index]
-    else:
-        return song_search.results[0]
+    except IndexError:
+        try:
+            return song_search.results[0]
+        except IndexError:
+            return None
 
 
 def get_album(album_name, artist_name):
@@ -100,7 +101,7 @@ def get_album(album_name, artist_name):
         release = musicbrainzngs.search_releases(
             query=f"artist:\"{artist_name}\" "
                   f"AND release:\"{album_name}\"",
-            limit=5)['release-list'][0]
+            limit=5)["release-list"][0]
         return (release.get("title", "unknown"),
                 ", ".join([credit.get("artist", {}).get("name", artist_name)
                            for credit in release.get("artist-credit", [{}])]),
@@ -128,10 +129,10 @@ def get_song(song_name, artist_name):
         result = musicbrainzngs.search_recordings(
             query=f"artist:\"{artist_name}\" AND recording:\"{song_name}\"",
             limit=5)
-        return (result['recording-list'][0].get("title", "unknown"),
-                ", ".join([credit.get("artist", {}).get("name", artist_name)
-                           for credit in result["recording-list"][0]
-                          .get("artist-credit", [{}])]))
+        return (result["recording-list"][0].get("title", "unknown"),
+                " ".join([artist if isinstance(artist, str)
+                          else artist["name"] for artist in
+                          result["recording-list"][0]["artist-credit"]]))
     except (musicbrainzngs.MusicBrainzError, IndexError):
         return None
 
@@ -151,6 +152,15 @@ def generic_genre(genre):
                         song = search_song(validated_info[0],
                                            validated_info[1],
                                            0)
+                        if song is None:
+                            return flask.render_template(
+                                "genre.html",
+                                genre=genre,
+                                albums=albums[genre],
+                                artists=[data["artist_name"] for _, data
+                                         in albums[genre].items()],
+                                max=int(os.getenv("QUEUE_MAX")),
+                                dev_mode=IS_DEV)
 
                         # noinspection PyTypeChecker, PyUnresolvedReferences
                         url = (yt_dlp.YoutubeDL({
@@ -179,8 +189,8 @@ def generic_genre(genre):
 
                         # noinspection PyUnresolvedReferences
                         queues[genre].append({
-                            "song_name": song_infos[song_input][0],
-                            "artist_name": song_infos[song_input][1],
+                            "song_name": song_infos[song_input.lower()][0],
+                            "artist_name": song_infos[song_input.lower()][1],
                             "url": url,
                             "length": length,
                             "timestamp": 0,
@@ -232,10 +242,21 @@ def generic_genre(genre):
                                 return "", song_url
                             for search_index in range(5):
                                 try:
-                                    song_url = search_song(
+                                    youtube_song = search_song(
                                         album_song["title"],
                                         album_infos[album_input][1],
-                                        search_index).watch_url
+                                        search_index)
+                                    if youtube_song is None:
+                                        return flask.render_template(
+                                            "genre.html",
+                                            genre=genre,
+                                            albums=albums[genre],
+                                            artists=[data["artist_name"]
+                                                     for _, data in
+                                                     albums[genre].items()],
+                                            max=int(os.getenv("QUEUE_MAX")),
+                                            dev_mode=IS_DEV)
+                                    song_url = youtube_song.watch_url
                                     streaming_url = ((await asyncio.to_thread(
                                         lambda: yt_dlp.YoutubeDL(
                                             {"format": "bestaudio/best",
@@ -247,7 +268,7 @@ def generic_genre(genre):
                                 except yt_dlp.utils.YoutubeDLError:
                                     if search_index == 4:
                                         streaming_url = ""
-                        return streaming_url, song_url
+                        return album_song, streaming_url, song_url
 
                     async def gather_song_info():
                         return await asyncio.gather(
@@ -255,20 +276,61 @@ def generic_genre(genre):
                               for album_song in album["entries"]])
 
                     gather_song_info_loop = asyncio.new_event_loop()
-                    try:
-                        songs_info = gather_song_info_loop.run_until_complete(
-                            gather_song_info())
-                    finally:
-                        gather_song_info_loop.close()
+                    songs_info = gather_song_info_loop.run_until_complete(
+                        gather_song_info())
+                    gather_song_info_loop.close()
+                    album_tracklist = get_album_tracklist(
+                        album_infos[album_input][2])
+                    matches = {song: None for song in album_tracklist}
+
+                    def clean_title(text):
+                        if text is not None:
+                            text = text.lower()
+                            text = text.replace("″", "\"").replace("‐", "-")
+                            text = re.sub(r"\[official audio]|\[audio]"
+                                          r"|\(official audio\)", "", text)
+                            return text.strip()
+                        else:
+                            return ""
+
+                    used_videos = set()
+                    for song in album_tracklist:
+                        song_clean = clean_title(song)
+                        best_video_info = None
+                        best_video_id = None
+                        best_score = 0
+                        for youtube_video in album["entries"]:
+                            video_id = (youtube_video.get("id")
+                                        or youtube_video["title"])
+                            if video_id in used_videos:
+                                continue
+                            video_title_clean = clean_title(
+                                youtube_video["title"])
+                            if (song_clean in video_title_clean
+                                    or video_title_clean in song_clean):
+                                score = 1.0 + (len(song_clean) / 1000.0)
+                            else:
+                                score = (difflib.SequenceMatcher(
+                                    None, song_clean, video_title_clean)
+                                         .ratio())
+                            if score > best_score:
+                                best_score = score
+                                best_video_id = video_id
+                                for item in songs_info:
+                                    if item[0] == youtube_video:
+                                        best_video_info = item[1:]
+                                        break
+                        if best_score >= 0.4 and best_video_info:
+                            matches[song] = best_video_info
+                            used_videos.add(best_video_id)
 
                     # noinspection PyTypeChecker, PyUnresolvedReferences
                     albums[genre][album_infos[album_input][0]] = {
                         "artist_name": album_infos[album_input][1],
-                        "songs": [(get_album_tracklist(
-                            album_infos[album_input][2])[i].lower(),
-                                   songs_info[i][0],
-                                   songs_info[i][1])
-                                  for i, song in enumerate(album["entries"])],
+                        "songs": [(song.lower(),
+                                   matches[song][0] if matches[song] else "",
+                                   matches[song][1] if matches[song] else "")
+                                  for i, song in enumerate(album_tracklist)],
                         "thumbnail": search_song(album["entries"][0]["title"],
                                                  album_infos[album_input][1],
                                                  0)
@@ -317,15 +379,18 @@ def generic_genre(genre):
 
 def generic_album(genre, album):
     if flask.request.method == "POST":
-        return flask.render_template("album.html",
-                                     album=album,
-                                     artist=albums[genre]
-                                     [album]["artist_name"],
-                                     genre=genre,
-                                     songs=[song_name for
-                                            song_name, song_url, youtube_url
-                                            in albums[genre][album]["songs"]],
-                                     dev_mode=IS_DEV)
+        if album in albums[genre]:
+            return flask.render_template(
+                "album.html",
+                album=album,
+                artist=albums[genre]
+                [album]["artist_name"],
+                genre=genre,
+                songs=[song_name for song_name, song_url, youtube_url
+                       in albums[genre][album]["songs"]],
+                dev_mode=IS_DEV)
+        else:
+            return flask.render_template("404.html"), 404
     else:
         return flask.render_template("force-post.html", dev_mode=IS_DEV)
 
