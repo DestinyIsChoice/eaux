@@ -16,35 +16,35 @@
     min-height: 0;
     overflow: hidden;
     text-align: center;
-    text-shadow: -2px 2px 0 #232634;
+    text-shadow: -2px 2px 0 #002b36;
     transition: color 0.2s ease-in-out;
 }
 
 .back-button-container {
     display: grid;
     grid-template-rows: 1fr;
-    text-shadow: -2px 2px 0 #232634;
+    text-shadow: -2px 2px 0 #002b36;
     top: 20px;
     z-index: 9999;
 }
 
 .back-button {
-    background-color: #494d64;
-    box-shadow: -8px 8px 0 #232634;
-    color: #ca9ee6;
+    background-color: #005a71;
+    box-shadow: -8px 8px 0 #002b36;
+    color: #eee8d5;
     transition: transform 0.1s ease-in-out;
 }
 
 .back-button:hover {
-    background-color: #ca9ee6;
-    text-shadow: 0 0 0 #232634;
+    background-color: #eee8d5;
+    text-shadow: 0 0 0 #002b36;
     transform: scale(1.02) translate(1px, -1px);
 }
 
 .back-button:visited .home-icon {
-    color: #ca9ee6;
+    color: #eee8d5;
 }
 
 .back-button:hover .home-icon {
-    color: #494d64;
+    color: #005a71;
 }
