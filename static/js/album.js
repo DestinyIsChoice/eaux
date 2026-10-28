@@ -1,4 +1,5 @@
 import convert from "color-convert";
+import {generateCanvas, setColorScheme} from "./utils";
 
 const album = document.getElementById("album").dataset.album;
 const genre = document.getElementById("genre").dataset.genre;
@@ -194,42 +195,13 @@ fetch(`albums`)
     const backgroundHsv = convert.rgb.hsv(data.albums[album].colors[0]);
     const primaryHsv = convert.rgb.hsv(data.albums[album].colors[1]);
     const secondaryHsv = convert.rgb.hsv(data.albums[album].colors[2]);
-    const [backgroundR, backgroundG, backgroundB] = convert.hsv.rgb(
-      backgroundHsv[0], Math.min(backgroundHsv[1], 32.69), 20.39);
-    document.documentElement.style.setProperty("--primary-color",
-      `#${convert.hsv.hex(primaryHsv[0], Math.min(primaryHsv[1], 31.3), 90.2)}`);
-    document.documentElement.style.setProperty("--secondary-color",
-      `#${convert.hsv.hex(secondaryHsv[0], Math.min(secondaryHsv[1], 32.69), 20.39)}`);
-    document.documentElement.style.setProperty("--background-0-color",
-      `#${convert.rgb.hex(backgroundR, backgroundG, backgroundB)}`);
-    document.documentElement.style.setProperty("--background-1-color",
-      `#${convert.rgb.hex(backgroundR * 1.171, backgroundG * 1.171, backgroundB * 1.171)}`);
-    document.documentElement.style.setProperty("--background-2-color",
-      `#${convert.rgb.hex(backgroundR * 1.371, backgroundG * 1.371, backgroundB * 1.371)}`);
-    document.documentElement.style.setProperty("--background-3-color",
-      `#${convert.rgb.hex(backgroundR * 1.857, backgroundG * 1.857, backgroundB * 1.857)}`);
-    document.documentElement.style.setProperty("--background-4-color",
-      `#${convert.rgb.hex(backgroundR * 2.314, backgroundG * 2.314, backgroundB * 2.314)}`);
+    setColorScheme(document, primaryHsv, secondaryHsv, backgroundHsv);
     if ("mediaSession" in navigator) {
       const image = new Image();
       image.crossOrigin = "anonymous";
       image.onload = () => {
-        const width = image.naturalWidth;
-        const height = image.naturalHeight;
-        if (!width || !height) return;
-        const canvas = document.createElement("canvas");
-        canvas.width = 512;
-        canvas.height = 512;
-        const size = Math.min(width, height);
-        const startX = (width - size) / 2;
-        const startY = (height - size) / 2;
-        canvas.getContext("2d").drawImage(
-          image,
-          startX, startY, size, size,
-          0, 0, 512, 512
-        );
         try {
-          cover = canvas.toDataURL("image/jpeg");
+          cover = generateCanvas(image).toDataURL("image/jpeg");
         } catch (error) {
 
           // noinspection JSUnresolvedVariable

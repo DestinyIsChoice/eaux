@@ -1,4 +1,4 @@
-@import url("https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,opsz,wght@0,8..60,200..900;1,8..60,200..900&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Roboto+Mono:ital,wght@0,100..700;1,100..700&display=swap");
 
 @property --primary-color {
     syntax: "<color>";
@@ -14,7 +14,7 @@
 
 * {
     box-sizing: border-box;
-    font-family: "Source Serif 4", "Times New Roman", Times, Georgia, serif;
+    font-family: "Roboto Mono", monospace;
     font-style: italic;
     margin: 0;
     padding: 0;
@@ -32,8 +32,8 @@ html {
 
 body {
     align-items: center;
-    background-color: #303446;
-    color: #ca9ee6;
+    background-color: #003b4a;
+    color: #eee8d5;
     display: flex;
     flex-direction: column;
     justify-content: center;

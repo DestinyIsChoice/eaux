@@ -112,14 +112,23 @@ def get_album(album_name, artist_name):
 
 def get_album_tracklist(release_id):
     try:
-        return [
-            track.get("recording", {}).get("title", "unknown")
-            for medium in
-            musicbrainzngs.get_release_by_id(
-                release_id, includes=["recordings"])
-            .get("release", {})["medium-list"]
-            for track in medium.get("track-list", [])
-        ]
+        tracklist = []
+        for track in musicbrainzngs.get_release_by_id(
+            release_id, includes=["recordings", "artist-credits"]
+        ).get("release", {})["medium-list"][0].get("track-list", []):
+            title = track.get("recording", {}).get("title", "unknown")
+            artist_credit = track.get("artist-credit", [])
+            if len(artist_credit) > 1:
+
+                # noinspection PyUnresolvedReferences
+                feat_string = ", ".join(
+                    [credit.get("artist", {}).get("name", "")
+                     for credit in artist_credit[1:]
+                     if not isinstance(credit, str)]).strip()
+                if feat_string:
+                    title = f"{title} ft. {feat_string}"
+            tracklist.append(title)
+        return tracklist
     except musicbrainzngs.MusicBrainzError:
         return None
 

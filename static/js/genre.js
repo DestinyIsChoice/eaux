@@ -1,4 +1,5 @@
 import convert from "color-convert";
+import {generateCanvas, setColorScheme} from "./utils";
 
 const audio = document.getElementById("audio");
 const carousel = document.getElementById("carousel-track");
@@ -39,8 +40,8 @@ function hidePopup() {
 }
 
 function showPopup(titleText, messageText) {
-  if (titleText) document.getElementById('popup-title').textContent = titleText;
-  if (messageText) document.getElementById('popup-message').textContent = messageText;
+  if (titleText) document.getElementById("popup-title").textContent = titleText;
+  if (messageText) document.getElementById("popup-message").textContent = messageText;
   popupOverlay.classList.add("show");
 }
 
@@ -97,7 +98,7 @@ function updateCarouselSizing() {
 }
 
 function updateContent() {
-  fetch(`/${genre}/queue`)
+  return fetch(`/${genre}/queue`)
     .then((response) => response.json())
     .then(async (data) => {
       const newUrl = data.queue.length !== 0
@@ -109,27 +110,10 @@ function updateContent() {
         newUrl.slice(0, newUrl.indexOf("#")) !==
         oldUrl.slice(0, oldUrl.indexOf("#"))
       ) audio.load();
-      const backgroundHsv = data.queue.length !== 0 ? convert.rgb.hsv(data.queue[0].colors[0]) : [229.41, 32.69, 20.39];
-      const primaryHsv = data.queue.length !== 0 ? convert.rgb.hsv(data.queue[0].colors[1]) : [276.67, 31.3, 90.2];
-      const secondaryHsv = data.queue.length !== 0 ? convert.rgb.hsv(data.queue[0].colors[2]) : [229.41, 32.69, 20.39];
-      const [backgroundR, backgroundG, backgroundB] = convert.hsv.rgb(
-        backgroundHsv[0], Math.min(backgroundHsv[1], 32.69), 20.39);
-      document.documentElement.style.setProperty("--primary-color",
-        `#${convert.hsv.hex(primaryHsv[0], Math.min(primaryHsv[1], 31.3), 90.2)}`);
-      document.documentElement.style.setProperty("--secondary-color",
-        `#${convert.hsv.hex(secondaryHsv[0], Math.min(secondaryHsv[1], 32.69), 20.39)}`);
-      document.documentElement.style.setProperty("--background-0-color",
-        `#${convert.rgb.hex(backgroundR, backgroundG, backgroundB)}`);
-      document.documentElement.style.setProperty("--background-1-color",
-        `#${convert.rgb.hex(backgroundR * 1.171, backgroundG * 1.171, backgroundB * 1.171)}`);
-      document.documentElement.style.setProperty("--background-2-color",
-        `#${convert.rgb.hex(backgroundR * 1.371, backgroundG * 1.371, backgroundB * 1.371)}`);
-      document.documentElement.style.setProperty("--background-3-color",
-        `#${convert.rgb.hex(backgroundR * 1.857, backgroundG * 1.857, backgroundB * 1.857)}`);
-      document.documentElement.style.setProperty("--background-4-color",
-        `#${convert.rgb.hex(backgroundR * 2.086, backgroundG * 2.086, backgroundB * 2.086)}`);
-      document.documentElement.style.setProperty("--background-5-color",
-        `#${convert.rgb.hex(backgroundR * 2.314, backgroundG * 2.314, backgroundB * 2.314)}`);
+      const backgroundHsv = data.queue.length !== 0 ? convert.rgb.hsv(data.queue[0].colors[0]) : [192.22, 100, 21.18];
+      const primaryHsv = data.queue.length !== 0 ? convert.rgb.hsv(data.queue[0].colors[1]) : [45.6, 10.5, 93.33];
+      const secondaryHsv = data.queue.length !== 0 ? convert.rgb.hsv(data.queue[0].colors[2]) : [192.22, 100, 21.18];
+      setColorScheme(document, primaryHsv, secondaryHsv, backgroundHsv);
 
       // noinspection JSUnresolvedVariable
       const newHTML = data.queue
@@ -138,19 +122,20 @@ function updateContent() {
             `${song.song_name.toLowerCase()} - ${song.artist_name.toLowerCase()}<br>`,
         )
         .join("");
-      if (newHTML === list.innerHTML) return;
-      list.style.height = `${list.offsetHeight}px`;
-      const clone = list.cloneNode(false);
-      clone.style.visibility = "hidden";
-      clone.style.position = "absolute";
-      clone.style.height = "auto";
-      clone.innerHTML = newHTML;
-      list.parentNode.appendChild(clone);
-      const targetHeight = clone.scrollHeight;
-      clone.remove();
-      list.innerHTML = newHTML;
-      void list.offsetHeight;
-      list.style.height = `${targetHeight}px`;
+      if (newHTML !== list.innerHTML) {
+        list.style.height = `${list.offsetHeight}px`;
+        const clone = list.cloneNode(false);
+        clone.style.visibility = "hidden";
+        clone.style.position = "absolute";
+        clone.style.height = "auto";
+        clone.innerHTML = newHTML;
+        list.parentNode.appendChild(clone);
+        const targetHeight = clone.scrollHeight;
+        clone.remove();
+        list.innerHTML = newHTML;
+        void list.offsetHeight;
+        list.style.height = `${targetHeight}px`;
+      }
       if ("mediaSession" in navigator && data.queue.length !== 0) {
         new Promise(resolve => {
           const originalImage = new Image();
@@ -165,21 +150,7 @@ function updateContent() {
             const image = new Image();
             image.crossOrigin = "anonymous";
             image.onload = () => {
-              const width = image.naturalWidth;
-              const height = image.naturalHeight;
-              if (!width || !height) return;
-              const canvas = document.createElement("canvas");
-              canvas.width = 512;
-              canvas.height = 512;
-              const size = Math.min(width, height);
-              const startX = (width - size) / 2;
-              const startY = (height - size) / 2;
-              canvas.getContext("2d").drawImage(
-                image,
-                startX, startY, size, size,
-                0, 0, 512, 512
-              );
-              resolve(canvas.toDataURL("image/png"));
+              resolve(generateCanvas(image).toDataURL("image/png"));
             };
 
             // noinspection JSUnresolvedVariable
@@ -221,8 +192,8 @@ function updateContent() {
           audio.currentTime = lastTime;
         });
       }
-    });
-  fetch(`/${genre}/albums`)
+    })
+    .then(() => fetch(`/${genre}/albums`))
     .then((response) => response.json())
     .then((data) => {
       if (albumsResponse && JSON.stringify(Object.keys(albumsResponse.albums)) === JSON.stringify(Object.keys(data.albums))) return;
@@ -257,28 +228,34 @@ function updateContent() {
     });
 }
 
-async function reloadlessSubmit(form, value, event, validator) {
+function reloadlessSubmit(form, value, event, validator) {
   const formData = new FormData(form);
   event.preventDefault();
   formData.append(value, "clicked");
   formData.append("initial-load", "false");
-  if (await validator()) {
-    fetch(window.location.href, {
-      method: "POST",
-      body: formData
-    })
-      .then(response => {
-        if (response.ok) {
-          form.reset();
-          form.classList.remove("show");
-          updateContent();
-        }
+  return validator().then(async (isValid) => {
+    if (isValid) {
+      const response = await fetch(window.location.href, {
+        method: "POST",
+        body: formData
       });
-  }
+      if (response.ok) {
+        form.reset();
+        form.classList.remove("show");
+        await updateContent();
+        return true;
+      }
+    }
+    return false;
+  });
 }
 
 webWorker.onmessage = function (event) {
-  if (event.data === "tick") updateContent();
+  if (event.data === "tick") {
+
+    // noinspection JSIgnoredPromiseFromCall
+    updateContent();
+  }
 };
 document.addEventListener("visibilitychange", async () => {
   webWorker.postMessage("start");
@@ -296,8 +273,11 @@ document.addEventListener("DOMContentLoaded", () => {
     document.querySelectorAll(inputClass).forEach(input => {
       if (input.value === "") incomplete = true;
     });
-    document.querySelector(submitClass).textContent = "submit";
-    document.querySelector(submitClass).disabled = incomplete;
+    const submitBtn = document.querySelector(submitClass);
+    if (!submitBtn.dataset.submitting) {
+      submitBtn.textContent = "submit";
+      submitBtn.disabled = incomplete;
+    }
   }
 
   carouselContainer.addEventListener("wheel", (event) => {
@@ -358,99 +338,114 @@ document.addEventListener("DOMContentLoaded", () => {
   document.querySelectorAll(".album-input").forEach(input => {
     input.addEventListener("input", () => {
       validateForm(".album-input", ".album-submit");
-      document.querySelector(".album-submit").textContent = "submit";
     });
   });
   songForm.addEventListener("submit", async (event) => {
     event.preventDefault();
     const submitButton = document.querySelector(".song-submit");
-    if (submitButton) submitButton.disabled = true;
+    if (submitButton.disabled) return;
+    submitButton.disabled = true;
+    submitButton.dataset.submitting = "true";
+    submitButton.textContent = "processing...";
     const formData = new FormData(songForm);
     const lastUserSong = JSON.parse(localStorage.getItem(`last_submitted_song_${genre}`));
     const submittedArtistName = formData.get("artist-search").toLowerCase();
     const submittedSongName = formData.get("song-search").toLowerCase();
-    reloadlessSubmit(songForm, "song-submit", event, async () => {
-      const queue_data = await (await fetch(`/${genre}/queue`)).json();
-      const data = await (await fetch("/validate-song", {
-        method: "POST",
-        headers: {"Content-Type": "application/json"},
-        body: JSON.stringify({song: submittedSongName, artist: submittedArtistName})
-      })).json();
-      if (lastUserSong) {
+    try {
+      await reloadlessSubmit(songForm, "song-submit", event, async () => {
+        const queue_data = await (await fetch(`/${genre}/queue`)).json();
+        const data = await (await fetch("/validate-song", {
+          method: "POST",
+          headers: {"Content-Type": "application/json"},
+          body: JSON.stringify({song: submittedSongName, artist: submittedArtistName})
+        })).json();
+        if (lastUserSong) {
 
-        // noinspection JSUnresolvedVariable
-        if (queue_data.queue.some(song =>
-          song.song_name.toLowerCase() === lastUserSong.song.toLowerCase() &&
-          song.artist_name.toLowerCase() === lastUserSong.artist.toLowerCase()
-        )) {
-          showPopup("cannot submit song", "you have another song in queue!");
-          submitButton.disabled = true;
-          return false;
-        }
-      }
-      if (data.song === null) {
-        event.preventDefault();
-        showPopup("cannot submit song", "cannot find song!");
-        submitButton.disabled = true;
-        return false;
-      }
-      if (queue_data.queue.length >= document.getElementById("max").dataset.max) {
-        showPopup("cannot submit song", `${queue_data.queue.length} songs already in queue!`);
-        submitButton.disabled = true;
-        return false;
-      }
-
-      // noinspection JSUnresolvedVariable
-      if (queue_data.queue.some(song =>
-        song.song_name.toLowerCase() === data.song[0].toLowerCase() &&
-        song.artist_name.toLowerCase() === data.song[1].toLowerCase()
-      )) {
-        showPopup("cannot submit song", "song already in queue!");
-        submitButton.disabled = true;
-        return false;
-      }
-      localStorage.setItem(`last_submitted_song_${genre}`, JSON.stringify({
-        song: data.song[0],
-        artist: data.song[1]
-      }));
-      return true;
-    });
-  });
-  albumForm.addEventListener("submit", (event) => {
-    event.preventDefault();
-    const formData = new FormData(albumForm);
-    const today = new Date().toISOString().split("T")[0];
-    document.querySelector(".album-submit").disabled = true;
-    if (localStorage.getItem(`last_album_submission_date_${genre}`) === today) {
-      showPopup("cannot submit album", "already submitted an album today!");
-      return false;
-    }
-    fetch("/validate-album", {
-      method: "POST",
-      headers: {"Content-Type": "application/json"},
-      body: JSON.stringify({
-        album: formData.get("album-search").trim(),
-        artist: formData.get("artist-search").trim()
-      })
-    })
-      .then((response) => response.json())
-      .then((data) => {
-        if (data.album === null) {
-          showPopup("cannot submit album", "cannot find album!");
-          return false;
-        }
-        reloadlessSubmit(albumForm, "album-submit", event, async () => {
-          const albumsData = await (await fetch(`/${genre}/albums`)).json();
-          if (albumsData.albums && Object.keys(albumsData.albums)
-            .map(album => album.toLowerCase())
-            .includes(data.album[0].toLowerCase())) {
-            showPopup("cannot submit album", "album already submitted!");
+          // noinspection JSUnresolvedReference
+          if (queue_data.queue.some(song =>
+            song.song_name.toLowerCase() === lastUserSong.song.toLowerCase() &&
+            song.artist_name.toLowerCase() === lastUserSong.artist.toLowerCase()
+          )) {
+            showPopup("cannot submit song", "you have another song in queue!");
             return false;
           }
-          localStorage.setItem(`last_album_submission_date_${genre}`, today);
-          return true;
-        });
-      }).catch(err => console.error("Error during validation:", err));
+        }
+        if (data.song === null) {
+          showPopup("cannot submit song", "cannot find song!");
+          return false;
+        }
+        if (queue_data.queue.length >= document.getElementById("max").dataset.max) {
+          showPopup("cannot submit song", `${queue_data.queue.length} songs already in queue!`);
+          return false;
+        }
+
+        // noinspection JSUnresolvedReference
+        if (queue_data.queue.some(song =>
+          song.song_name.toLowerCase() === data.song[0].toLowerCase() &&
+          song.artist_name.toLowerCase() === data.song[1].toLowerCase()
+        )) {
+          showPopup("cannot submit song", "song already in queue!");
+          return false;
+        }
+        localStorage.setItem(`last_submitted_song_${genre}`, JSON.stringify({
+          song: data.song[0],
+          artist: data.song[1]
+        }));
+        return true;
+      });
+    } finally {
+      delete submitButton.dataset.submitting;
+      validateForm(".song-input", ".song-submit");
+    }
+  });
+  albumForm.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    const submitButton = document.querySelector(".album-submit");
+    if (submitButton.disabled) return;
+    const formData = new FormData(albumForm);
+    const today = new Date().toISOString().split("T")[0];
+    submitButton.disabled = true;
+    submitButton.dataset.submitting = "true";
+    submitButton.textContent = "processing...";
+    if (localStorage.getItem(`last_album_submission_date_${genre}`) === today) {
+      showPopup("cannot submit album", "already submitted an album today!");
+      delete submitButton.dataset.submitting;
+      validateForm(".album-input", ".album-submit");
+      return false;
+    }
+    try {
+      const response = await fetch("/validate-album", {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({
+          album: formData.get("album-search").trim(),
+          artist: formData.get("artist-search").trim()
+        })
+      });
+      const data = await response.json();
+      if (data.album === null) {
+        showPopup("cannot submit album", "cannot find album!");
+        delete submitButton.dataset.submitting;
+        validateForm(".album-input", ".album-submit");
+        return false;
+      }
+      await reloadlessSubmit(albumForm, "album-submit", event, async () => {
+        const albumsData = await (await fetch(`/${genre}/albums`)).json();
+        if (albumsData.albums && Object.keys(albumsData.albums)
+          .map(album => album.toLowerCase())
+          .includes(data.album[0].toLowerCase())) {
+          showPopup("cannot submit album", "album already submitted!");
+          return false;
+        }
+        localStorage.setItem(`last_album_submission_date_${genre}`, today);
+        return true;
+      });
+    } catch (e) {
+      console.error(e);
+    } finally {
+      delete submitButton.dataset.submitting;
+      validateForm(".album-input", ".album-submit");
+    }
   });
 });
 if (volumeSlider && audio) {
@@ -478,6 +473,8 @@ audio.addEventListener("play", async () => {
     audio.volume = 1;
   }
   if ("mediaSession" in navigator) {
+
+    // noinspection ES6MissingAwait
     updateContent();
     navigator.mediaSession.playbackState = "playing";
   }
@@ -489,6 +486,8 @@ audio.addEventListener("ended", async () => {
   if (transitioning) return;
   transitioning = true;
   audio.currentTime = 0;
+
+  // noinspection ES6MissingAwait
   updateContent();
   transitioning = false;
   if ("mediaSession" in navigator) navigator.mediaSession.playbackState = "paused";
@@ -499,6 +498,8 @@ popupOverlay.addEventListener("click", (event) => {
     hidePopup();
   }
 });
+
+// noinspection JSIgnoredPromiseFromCall
 updateContent();
 window.addEventListener("resize", updateCarouselSizing);
 if (window.history.replaceState) window.history.replaceState(null, null, window.location.href);

@@ -2,7 +2,10 @@ colorthief
 python-dotenv
 flask
 Flask-BasicAuth
+musicbrainzngs
 Paste
+py-yt-search
 pytubefix
+requests
 waitress
 yt-dlp
