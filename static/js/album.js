@@ -25,7 +25,9 @@ async function acquireWakeLock() {
 }
 
 function releaseWakeLock() {
-  if (wakeLock !== null) wakeLock.release().then(() => { wakeLock = null; });
+  if (wakeLock !== null) wakeLock.release().then(() => {
+    wakeLock = null;
+  });
 }
 
 function updateDOMActiveTrack() {
@@ -169,8 +171,8 @@ audio.addEventListener("ended", async () => {
 source.addEventListener("error", async () => {
   fetch(`/${genre}/${album}/regenerate`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ "song_index": index })
+    headers: {"Content-Type": "application/json"},
+    body: JSON.stringify({"song_index": index})
   })
     .then((response) => response.json())
     .then(async (data) => {

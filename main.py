@@ -163,11 +163,12 @@ def generic_genre(genre):
                                            i)
                         if song is not None:
 
-                            # noinspection PyTypeChecker, PyUnresolvedReferences
+                            # noinspection PyTypeChecker
                             url = (yt_dlp.YoutubeDL({
                                 "format": "bestaudio/best",
                                 "quiet": True}
-                            ).extract_info(song.watch_url, download=False)["url"])
+                            ).extract_info(song.watch_url,
+                                           download=False)["url"])
                             while True:
                                 try:
 
@@ -183,15 +184,18 @@ def generic_genre(genre):
                                         url],
                                         stdout=subprocess.PIPE,
                                         stderr=subprocess.PIPE,
-                                        text=True).stdout)["format"]["duration"])
+                                        text=True).stdout)
+                                                   ["format"]["duration"])
                                     break
                                 except KeyError:
                                     pass
 
                             # noinspection PyUnresolvedReferences
                             queues[genre].append({
-                                "song_name": song_infos[song_input.lower()][0],
-                                "artist_name": song_infos[song_input.lower()][1],
+                                "song_name": song_infos
+                                [song_input.lower()][0],
+                                "artist_name": song_infos
+                                [song_input.lower()][1],
                                 "url": url,
                                 "length": length,
                                 "timestamp": 0,
@@ -427,9 +431,10 @@ def generic_album_regenerate(genre, album):
         for i in range(5):
 
             # noinspection PyUnresolvedReferences
-            youtube_song = search_song(albums[genre][album]["songs"][song_index][0],
-                                      albums[genre][album]["artist_name"],
-                                      i)
+            youtube_song = search_song(
+                albums[genre][album]["songs"][song_index][0],
+                albums[genre][album]["artist_name"],
+                i)
             if youtube_song is not None:
                 song_info = list(albums[genre][album]["songs"][song_index])
                 song_info[2] = youtube_song.watch_url
