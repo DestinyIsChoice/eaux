@@ -25,19 +25,24 @@ async function acquireWakeLock() {
 }
 
 function releaseWakeLock() {
-  if (wakeLock !== null) {
-    wakeLock.release()
-      .then(() => {
-        wakeLock = null;
-      });
-  }
+  if (wakeLock !== null) wakeLock.release().then(() => { wakeLock = null; });
+}
+
+function updateDOMActiveTrack() {
+  if (document.visibilityState !== "visible") return;
+  allButtons.forEach((button, idx) => {
+    button.classList.toggle("active", idx === index);
+  });
 }
 
 function setMediaSession() {
+  if (!("mediaSession" in navigator) || !albumData.albums[album]) return;
+  const currentSong = albumData.albums[album].songs[index];
+  if (!currentSong) return;
 
-  // noinspection JSUnresolvedVariable
+  // noinspection JSUnresolvedReference
   navigator.mediaSession.metadata = new MediaMetadata({
-    title: albumData.albums[album].songs[index][0],
+    title: currentSong[0],
     artist: albumData.albums[album].artist_name.toLowerCase(),
     album: album.toLowerCase(),
     artwork: [
@@ -45,46 +50,63 @@ function setMediaSession() {
       {src: cover, sizes: "512x512", type: "image/jpeg"}
     ]
   });
+}
+
+function initMediaSessionHandlers() {
+  if (!("mediaSession" in navigator)) return;
+  navigator.mediaSession.setActionHandler("play", () => {
+    audio.play();
+  });
+  navigator.mediaSession.setActionHandler("pause", () => {
+    audio.pause();
+  });
   navigator.mediaSession.setActionHandler("nexttrack", async () => {
     if (transitioning) return;
     if (index < albumData.albums[album].songs.length - 1) {
       transitioning = true;
+      navigator.mediaSession.playbackState = "playing";
       audio.pause();
-      await fadeOut();
-      audio.currentTime = 0;
       index++;
       await updateAudio();
-      navigator.mediaSession.playbackState = "playing";
       transitioning = false;
     }
   });
-
   navigator.mediaSession.setActionHandler("previoustrack", async () => {
     if (transitioning) return;
     if (index > 0) {
       transitioning = true;
+      navigator.mediaSession.playbackState = "playing";
       audio.pause();
-      await fadeOut();
-      audio.currentTime = 0;
       index--;
       await updateAudio();
-      navigator.mediaSession.playbackState = "playing";
       transitioning = false;
     }
+  });
+  navigator.mediaSession.setActionHandler("seekbackward", (event) => {
+    audio.currentTime = Math.max(audio.currentTime - (event.seekOffset || 10), 0);
+  });
+  navigator.mediaSession.setActionHandler("seekforward", (event) => {
+    audio.currentTime = Math.min(audio.currentTime + (event.seekOffset || 10), audio.duration);
+  });
+  navigator.mediaSession.setActionHandler("seekto", (event) => {
+    if (event.fastSeek && "fastSeek" in audio) {
+      audio.fastSeek(event.seekTime);
+      return;
+    }
+    audio.currentTime = event.seekTime;
   });
 }
 
 async function updateAudio() {
-  if ("mediaSession" in navigator && albumData.albums[album]) setMediaSession();
+  setMediaSession();
+  updateDOMActiveTrack();
 
   async function validateAudio() {
-    const newUrl = albumData.albums[album].songs[index][1];
-    if (newUrl === "") return false;
-    allButtons.forEach(button => button.classList.remove("active"));
-    if (allButtons[index]) allButtons[index].classList.add("active");
-    source.src = newUrl;
+    const song = albumData.albums[album].songs[index];
+    if (!song) return false;
+    source.src = song[1];
     audio.load();
-    audio.play();
+    await audio.play();
     return true;
   }
 
@@ -92,12 +114,17 @@ async function updateAudio() {
     if (await validateAudio()) break;
     index++;
   }
-  if (index === albumData.albums[album].songs.length) {
-    allButtons.forEach(button => button.classList.remove("active"));
+  if (index >= albumData.albums[album].songs.length) {
+    if (document.visibilityState === "visible") allButtons.forEach(button => button.classList.remove("active"));
+    releaseWakeLock();
   }
 }
 
 async function fadeOut() {
+  if (document.visibilityState !== "visible") {
+    audio.volume = 0;
+    return;
+  }
   while (audio.volume > 0.25) {
     audio.volume -= 0.25;
     await new Promise(resolve => setTimeout(resolve, 50));
@@ -110,6 +137,10 @@ audio.addEventListener("play", async () => {
   await acquireWakeLock();
   setMediaSession();
   clearInterval(fadeInInterval);
+  if (document.visibilityState !== "visible") {
+    audio.volume = volume;
+    return;
+  }
   audio.volume = 0;
   fadeInInterval = setInterval(() => {
     if (audio.volume < volume - 0.05) {
@@ -123,21 +154,6 @@ audio.addEventListener("play", async () => {
 audio.addEventListener("pause", () => {
   if ("mediaSession" in navigator) navigator.mediaSession.playbackState = "paused";
 });
-audio.addEventListener("timeupdate", async () => {
-  if (!audio.duration || transitioning) return;
-  if (audio.duration - audio.currentTime <= 1) {
-    transitioning = true;
-    await fadeOut();
-    audio.currentTime = 0;
-    index++;
-    if (index < albumData.albums[album].songs.length) {
-      await updateAudio();
-    } else {
-      releaseWakeLock();
-    }
-    transitioning = false;
-  }
-});
 audio.addEventListener("ended", async () => {
   if (transitioning) return;
   transitioning = true;
@@ -146,24 +162,25 @@ audio.addEventListener("ended", async () => {
     await updateAudio();
   } else {
     releaseWakeLock();
+    if ("mediaSession" in navigator) navigator.mediaSession.playbackState = "paused";
   }
   transitioning = false;
-  if ("mediaSession" in navigator) navigator.mediaSession.playbackState = "paused";
 });
 source.addEventListener("error", async () => {
   fetch(`/${genre}/${album}/regenerate`, {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json"
-    },
-    body: JSON.stringify({
-      "song_index": index
-    })
-  }).then((response) => response.json())
-    .then((data) => {
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ "song_index": index })
+  })
+    .then((response) => response.json())
+    .then(async (data) => {
       if (data.url === "") {
         index++;
-        updateAudio();
+        await updateAudio();
+      } else {
+        source.src = data.url;
+        audio.load();
+        await audio.play();
       }
     });
 });
@@ -183,61 +200,36 @@ volumeSlider.addEventListener("input", (event) => {
   volumeSlider.style.setProperty("--slider-progress", `${val}%`);
 });
 document.addEventListener("visibilitychange", async () => {
-  if (wakeLock === null && document.visibilityState === "visible") {
+  if (document.visibilityState === "visible") {
     await acquireWakeLock();
+    updateDOMActiveTrack();
   }
 });
+initMediaSessionHandlers();
 fetch(`albums`)
   .then((response) => response.json())
   .then(async (data) => {
     albumData = data;
-    await updateAudio();
     const backgroundHsv = convert.rgb.hsv(data.albums[album].colors[0]);
     const primaryHsv = convert.rgb.hsv(data.albums[album].colors[1]);
     const secondaryHsv = convert.rgb.hsv(data.albums[album].colors[2]);
     setColorScheme(document, primaryHsv, secondaryHsv, backgroundHsv);
-    if ("mediaSession" in navigator) {
-      const image = new Image();
-      image.crossOrigin = "anonymous";
-      image.onload = () => {
-        try {
-          cover = generateCanvas(image).toDataURL("image/jpeg");
-        } catch (error) {
+    const image = new Image();
+    image.crossOrigin = "anonymous";
+    image.onload = () => {
+      try {
+        cover = generateCanvas(image).toDataURL("image/jpeg");
+      } catch (error) {
 
-          // noinspection JSUnresolvedVariable
-          cover = data.albums[album].thumbnail;
-        }
-        setMediaSession();
-      };
+        // noinspection JSUnresolvedReference
+        cover = data.albums[album].thumbnail;
+      }
+      setMediaSession();
+    };
 
-      // noinspection JSUnresolvedVariable
-      image.src = data.albums[album].thumbnail;
-      navigator.mediaSession.setActionHandler("play", () => {
-        audio.play();
-      });
-      navigator.mediaSession.setActionHandler("pause", async () => {
-        if (document.visibilityState === "visible") {
-          while (audio.volume > 0.25) {
-            audio.volume -= 0.25;
-            await new Promise(resolve => setTimeout(resolve, 50));
-          }
-        }
-        audio.pause();
-      });
-      navigator.mediaSession.setActionHandler("seekbackward", (event) => {
-        audio.currentTime = Math.max(audio.currentTime - (event.seekOffset || 10), 0);
-      });
-      navigator.mediaSession.setActionHandler("seekforward", (event) => {
-        audio.currentTime = Math.min(audio.currentTime + (event.seekOffset || 10), audio.duration);
-      });
-      navigator.mediaSession.setActionHandler("seekto", (event) => {
-        if (event.fastSeek && "fastSeek" in audio) {
-          audio.fastSeek(event.seekTime);
-          return;
-        }
-        audio.currentTime = event.seekTime;
-      });
-    }
+    // noinspection JSUnresolvedReference
+    image.src = data.albums[album].thumbnail;
+    await updateAudio();
   });
 if (window.history.replaceState) window.history.replaceState(null, null, window.location.href);
 volumeSlider.style.setProperty("--slider-progress", "100%");

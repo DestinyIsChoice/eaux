@@ -231,7 +231,7 @@ button[name=song-submit]:not(:disabled):active, button[name=album-submit]:not(:d
     display: flex;
     align-items: center;
     flex: 1;
-    padding-left: 80px;
+    padding-left: 60px;
     white-space: nowrap;
     will-change: transform;
     transition: opacity 0.2s ease-in-out,

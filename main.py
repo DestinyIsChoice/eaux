@@ -155,64 +155,67 @@ def generic_genre(genre):
                 if not validated_info:
                     validated_info = (song_input,
                                       flask.request.form["artist-search"])
-
+                song = None
                 for i in range(5):
                     try:
                         song = search_song(validated_info[0],
                                            validated_info[1],
-                                           0)
-                        if song is None:
-                            return flask.render_template(
-                                "genre.html",
-                                genre=genre,
-                                albums=albums[genre],
-                                artists=[data["artist_name"] for _, data
-                                         in albums[genre].items()],
-                                max=int(os.getenv("QUEUE_MAX")),
-                                dev_mode=IS_DEV)
+                                           i)
+                        if song is not None:
 
-                        # noinspection PyTypeChecker, PyUnresolvedReferences
-                        url = (yt_dlp.YoutubeDL({
-                            "format": "bestaudio/best",
-                            "quiet": True}
-                        ).extract_info(song.watch_url, download=False)["url"])
-                        while True:
-                            try:
+                            # noinspection PyTypeChecker, PyUnresolvedReferences
+                            url = (yt_dlp.YoutubeDL({
+                                "format": "bestaudio/best",
+                                "quiet": True}
+                            ).extract_info(song.watch_url, download=False)["url"])
+                            while True:
+                                try:
 
-                                # noinspection PyTypeChecker
-                                length = float(json.loads(subprocess.run([
-                                    "ffprobe",
-                                    "-v",
-                                    "error",
-                                    "-show_entries",
-                                    "format=duration",
-                                    "-of",
-                                    "json",
-                                    url],
-                                    stdout=subprocess.PIPE,
-                                    stderr=subprocess.PIPE,
-                                    text=True).stdout)["format"]["duration"])
-                                break
-                            except KeyError:
-                                pass
+                                    # noinspection PyTypeChecker
+                                    length = float(json.loads(subprocess.run([
+                                        "ffprobe",
+                                        "-v",
+                                        "error",
+                                        "-show_entries",
+                                        "format=duration",
+                                        "-of",
+                                        "json",
+                                        url],
+                                        stdout=subprocess.PIPE,
+                                        stderr=subprocess.PIPE,
+                                        text=True).stdout)["format"]["duration"])
+                                    break
+                                except KeyError:
+                                    pass
 
-                        # noinspection PyUnresolvedReferences
-                        queues[genre].append({
-                            "song_name": song_infos[song_input.lower()][0],
-                            "artist_name": song_infos[song_input.lower()][1],
-                            "url": url,
-                            "length": length,
-                            "timestamp": 0,
-                            "thumbnail": song.thumbnail_url,
-                            "colors": get_distinct_palette(io.BytesIO(
-                                urllib.request.urlopen(
-                                    song.thumbnail_url).read()))
-                        })
-                        break
+                            # noinspection PyUnresolvedReferences
+                            queues[genre].append({
+                                "song_name": song_infos[song_input.lower()][0],
+                                "artist_name": song_infos[song_input.lower()][1],
+                                "url": url,
+                                "length": length,
+                                "timestamp": 0,
+                                "thumbnail": song.thumbnail_url,
+                                "colors": get_distinct_palette(io.BytesIO(
+                                    urllib.request.urlopen(
+                                        song.thumbnail_url).read()))
+                            })
+                            break
                     except pytubefix.exceptions.BotDetection:
                         pass
                     except pytubefix.exceptions.VideoUnavailable:
                         break
+                if song is None:
+
+                    # noinspection PyTypeChecker
+                    return flask.render_template(
+                        "genre.html",
+                        genre=genre,
+                        albums=albums[genre],
+                        artists=[data["artist_name"] for _, data
+                                 in albums[genre].items()],
+                        max=int(os.getenv("QUEUE_MAX")),
+                        dev_mode=IS_DEV)
             else:
                 try:
                     album_input = flask.request.form["album-search"]
@@ -221,6 +224,8 @@ def generic_genre(genre):
                         return flask.render_template("genre.html",
                                                      genre=genre,
                                                      albums=albums[genre])
+
+                    # noinspection PyTypeChecker
                     album = yt_dlp.YoutubeDL({
                         "extract_flat": True,
                         "skip_download": True,
@@ -241,6 +246,8 @@ def generic_genre(genre):
                         if not song_url:
                             return "", ""
                         try:
+
+                            # noinspection PyTypeChecker
                             streaming_url = (await asyncio.to_thread(
                                 lambda: yt_dlp.YoutubeDL(
                                     {"format": "bestaudio/best",
@@ -256,6 +263,8 @@ def generic_genre(genre):
                                         album_infos[album_input][1],
                                         search_index)
                                     if youtube_song is None:
+
+                                        # noinspection PyTypeChecker
                                         return flask.render_template(
                                             "genre.html",
                                             genre=genre,
@@ -266,6 +275,8 @@ def generic_genre(genre):
                                             max=int(os.getenv("QUEUE_MAX")),
                                             dev_mode=IS_DEV)
                                     song_url = youtube_song.watch_url
+
+                                    # noinspection PyTypeChecker
                                     streaming_url = ((await asyncio.to_thread(
                                         lambda: yt_dlp.YoutubeDL(
                                             {"format": "bestaudio/best",
@@ -290,6 +301,8 @@ def generic_genre(genre):
                     gather_song_info_loop.close()
                     album_tracklist = get_album_tracklist(
                         album_infos[album_input][2])
+
+                    # noinspection PyTypeChecker
                     matches = {song: None for song in album_tracklist}
 
                     def clean_title(text):
@@ -303,6 +316,8 @@ def generic_genre(genre):
                             return ""
 
                     used_videos = set()
+
+                    # noinspection PyTypeChecker
                     for song in album_tracklist:
                         song_clean = clean_title(song)
                         best_video_info = None
@@ -375,6 +390,8 @@ def generic_genre(genre):
                     app._got_first_request = True
                 except yt_dlp.utils.DownloadError:
                     pass
+
+        # noinspection PyTypeChecker
         return flask.render_template("genre.html",
                                      genre=genre,
                                      albums=albums[genre],
@@ -405,20 +422,32 @@ def generic_album(genre, album):
 
 
 def generic_album_regenerate(genre, album):
+    song_index = flask.request.get_json()["song_index"]
+    if albums[genre][album]["songs"][song_index][2] == "":
+        for i in range(5):
+
+            # noinspection PyUnresolvedReferences
+            youtube_song = search_song(albums[genre][album]["songs"][song_index][0],
+                                      albums[genre][album]["artist_name"],
+                                      i)
+            if youtube_song is not None:
+                song_info = list(albums[genre][album]["songs"][song_index])
+                song_info[2] = youtube_song.watch_url
+                (albums[genre][album]["songs"][song_index]) = song_info
+                break
+    if albums[genre][album]["songs"][song_index][2] == "":
+        return flask.jsonify({"url": ""})
 
     # noinspection PyTypeChecker
     new_url = yt_dlp.YoutubeDL({
         "format": "bestaudio/best",
         "quiet": True}
     ).extract_info(
-        albums[genre][album]["songs"]
-        [flask.request.get_json()["song_index"]][2],
+        albums[genre][album]["songs"][song_index][2],
         download=False)["url"]
-    song_info = list(albums[genre][album]["songs"]
-                     [flask.request.get_json()["song_index"]])
+    song_info = list(albums[genre][album]["songs"][song_index])
     song_info[1] = new_url
-    (albums[genre][album]["songs"]
-     [flask.request.get_json()["song_index"]]) = song_info
+    (albums[genre][album]["songs"][song_index]) = song_info
     return flask.jsonify({"url": [new_url]})
 
 
@@ -491,7 +520,7 @@ def validate_song():
         {"song": song_infos[flask.request.json["song"]]})
 
 
-# noinspection PyUnusedLocal
+# noinspection PyUnusedParameter
 @app.errorhandler(404)
 def page_not_found(error):
     return flask.render_template("404.html"), 404

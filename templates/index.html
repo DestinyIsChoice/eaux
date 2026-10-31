@@ -13,7 +13,7 @@
 <div class="genres">
     {% for genre in genres %}
     <a href="/{{ genre }}" class="genre-button">
-        {{ genre }}
+        {{ genre | lower }}
     </a>
     {% endfor %}
 </div>

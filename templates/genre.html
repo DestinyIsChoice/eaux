@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <title>eaux - {{ genre }}</title>
+    <title>eaux - {{ genre | lower }}</title>
     <style>
         :root {
             --primary-color: #eee8d5;
@@ -34,7 +34,7 @@
             <i class="fa-solid fa-house home-icon"></i>
         </a>
     </div>
-    <div id="genre" data-genre="{{ genre }}">{{ genre }}</div>
+    <div id="genre" data-genre="{{ genre }}">{{ genre | lower }}</div>
 </div>
 <div id="max" data-max="{{ max }}"></div>
 <audio id="audio" autoplay controls hidden>
