@@ -58,7 +58,7 @@ body {
     color: var(--primary-color);
     font-size: 1.1rem;
     line-height: 1.5;
-    max-width: 600px;
+    max-width: 400px;
     overflow: hidden;
     text-align: center;
     text-shadow: -2px 2px 0 var(--secondary-color);
@@ -231,7 +231,7 @@ button[name=song-submit]:not(:disabled):active, button[name=album-submit]:not(:d
     display: flex;
     align-items: center;
     flex: 1;
-    padding-left: 60px;
+    padding-left: 67px;
     white-space: nowrap;
     will-change: transform;
     transition: opacity 0.2s ease-in-out,

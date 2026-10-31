@@ -121,10 +121,16 @@ def get_album_tracklist(release_id):
             if len(artist_credit) > 1:
 
                 # noinspection PyUnresolvedReferences
-                feat_string = ", ".join(
+                feat_string = (", ".join(
                     [credit.get("artist", {}).get("name", "")
                      for credit in artist_credit[1:]
-                     if not isinstance(credit, str)]).strip()
+                     if not isinstance(credit, str)][:-1]).strip()
+                               + (" & " if len(
+                                  [credit for credit in artist_credit[1:]
+                                   if not isinstance(credit, str)]) > 1
+                                  else " ")
+                               + artist_credit[-1]
+                               .get("artist", {}).get("name", ""))
                 if feat_string:
                     title = f"{title} ft. {feat_string}"
             tracklist.append(title)
@@ -141,7 +147,8 @@ def get_song(song_name, artist_name):
         return (result["recording-list"][0].get("title", "unknown"),
                 " ".join([artist if isinstance(artist, str)
                           else artist["name"] for artist in
-                          result["recording-list"][0]["artist-credit"]]))
+                          result["recording-list"][0]["artist-credit"]])
+                .replace(" , ", ", "))
     except (musicbrainzngs.MusicBrainzError, IndexError):
         return None
 
