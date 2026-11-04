@@ -241,7 +241,6 @@ function reloadlessSubmit(form, value, event, validator) {
       });
       if (response.ok) {
         form.reset();
-        form.classList.remove("show");
         await updateContent();
         return true;
       }
@@ -359,17 +358,17 @@ document.addEventListener("DOMContentLoaded", () => {
           headers: {"Content-Type": "application/json"},
           body: JSON.stringify({song: submittedSongName, artist: submittedArtistName})
         })).json();
-        if (lastUserSong) {
-
-          // noinspection JSUnresolvedReference
-          if (queue_data.queue.some(song =>
-            song.song_name.toLowerCase() === lastUserSong.song.toLowerCase() &&
-            song.artist_name.toLowerCase() === lastUserSong.artist.toLowerCase()
-          )) {
-            showPopup("cannot submit song", "you have another song in queue!");
-            return false;
-          }
-        }
+        // if (lastUserSong) {
+        //
+        //   // noinspection JSUnresolvedReference
+        //   if (queue_data.queue.some(song =>
+        //     song.song_name.toLowerCase() === lastUserSong.song.toLowerCase() &&
+        //     song.artist_name.toLowerCase() === lastUserSong.artist.toLowerCase()
+        //   )) {
+        //     showPopup("cannot submit song", "you have another song in queue!");
+        //     return false;
+        //   }
+        // }
         if (data.song === null) {
           showPopup("cannot submit song", "cannot find song!");
           return false;
@@ -407,12 +406,12 @@ document.addEventListener("DOMContentLoaded", () => {
     submitButton.disabled = true;
     submitButton.dataset.submitting = "true";
     submitButton.textContent = "processing...";
-    if (localStorage.getItem(`last_album_submission_date_${genre}`) === today) {
-      showPopup("cannot submit album", "already submitted an album today!");
-      delete submitButton.dataset.submitting;
-      validateForm(".album-input", ".album-submit");
-      return false;
-    }
+    // if (localStorage.getItem(`last_album_submission_date_${genre}`) === today) {
+    //   showPopup("cannot submit album", "already submitted an album today!");
+    //   delete submitButton.dataset.submitting;
+    //   validateForm(".album-input", ".album-submit");
+    //   return false;
+    // }
     try {
       const response = await fetch("/validate-album", {
         method: "POST",
