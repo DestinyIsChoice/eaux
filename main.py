@@ -200,9 +200,9 @@ def generic_genre(genre):
                             # noinspection PyUnresolvedReferences
                             queues[genre].append({
                                 "song_name": song_infos
-                                [song_input.lower()][0],
+                                [song_input.lower()][0].replace("‐", "-"),
                                 "artist_name": song_infos
-                                [song_input.lower()][1],
+                                [song_input.lower()][1].replace("‐", "-"),
                                 "url": url,
                                 "length": length,
                                 "timestamp": 0,
@@ -318,7 +318,6 @@ def generic_genre(genre):
 
                     def clean_title(text):
                         if text is not None:
-                            text = text.lower()
                             text = text.replace("″", "\"").replace("‐", "-")
                             text = re.sub(r"\[official audio]|\[audio]"
                                           r"|\(official audio\)", "", text)
@@ -361,8 +360,8 @@ def generic_genre(genre):
 
                     # noinspection PyTypeChecker, PyUnresolvedReferences
                     albums[genre][album_infos[album_input][0]] = {
-                        "artist_name": album_infos[album_input][1],
-                        "songs": [(song.lower(),
+                        "artist_name": album_infos[album_input][1].replace("‐", "-"),
+                        "songs": [(song.replace("‐", "-"),
                                    matches[song][0] if matches[song] else "",
                                    matches[song][1] if matches[song] else "")
                                   for i, song in enumerate(album_tracklist)],

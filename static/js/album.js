@@ -45,8 +45,8 @@ function setMediaSession() {
   // noinspection JSUnresolvedReference
   navigator.mediaSession.metadata = new MediaMetadata({
     title: currentSong[0],
-    artist: albumData.albums[album].artist_name.toLowerCase(),
-    album: album.toLowerCase(),
+    artist: albumData.albums[album].artist_name,
+    album: album,
     artwork: [
       {src: cover, sizes: "96x96", type: "image/jpeg"},
       {src: cover, sizes: "512x512", type: "image/jpeg"}

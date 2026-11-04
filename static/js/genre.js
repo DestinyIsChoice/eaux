@@ -159,8 +159,8 @@ function updateContent() {
 
             // noinspection JSCheckFunctionSignatures, JSUnresolvedVariable
             navigator.mediaSession.metadata = new MediaMetadata({
-              title: data.queue[0].song_name.toLowerCase(),
-              artist: data.queue[0].artist_name.toLowerCase(),
+              title: data.queue[0].song_name,
+              artist: data.queue[0].artist_name,
               artwork: [
                 {src: imageURL, sizes: "96x96", type: "image/png"},
                 {src: imageURL, sizes: "512x512", type: "image/png"}

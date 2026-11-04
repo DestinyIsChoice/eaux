@@ -46,7 +46,7 @@
     <p id="list"></p>
     {% for song in songs %}
     <button type="button" class="song-button" data-song="{{ song }}">
-        {{ song }}
+        {{ song | lower }}
     </button>
     {% endfor %}
 </div>
